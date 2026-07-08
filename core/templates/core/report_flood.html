@@ -1,0 +1,266 @@
+{% extends 'core/base.html' %}
+{% block title %}Report a Flood — FloodWatch Kerala{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(135deg, #fff7ed, #fffbeb);
+    border-bottom: 1px solid rgba(249,115,22,0.3);
+    padding: 40px 0;
+}
+.page-header h1 { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; }
+
+.report-layout {
+    display: grid; grid-template-columns: 2fr 1fr; gap: 28px;
+    align-items: start;
+}
+@media (max-width: 900px) { .report-layout { grid-template-columns: 1fr; } }
+
+.form-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 32px;
+}
+.form-section-title {
+    font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700;
+    color: var(--primary); margin-bottom: 20px; padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+}
+.side-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 24px; margin-bottom: 16px;
+}
+.side-title { font-weight: 700; font-size: 15px; margin-bottom: 14px; }
+.tip { display: flex; gap: 10px; margin-bottom: 12px; font-size: 13px; line-height: 1.5; }
+.tip-icon { font-size: 18px; flex-shrink: 0; }
+
+.photo-drop {
+    border: 2px dashed var(--border); border-radius: 12px;
+    padding: 32px; text-align: center; cursor: pointer;
+    transition: all 0.2s; position: relative;
+}
+.photo-drop:hover { border-color: var(--primary); background: rgba(14,165,233,0.05); }
+.photo-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.photo-preview { display: none; }
+.photo-preview img { max-width: 100%; border-radius: 10px; margin-top: 12px; }
+
+.severity-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.sev-option { position: relative; }
+.sev-option input[type=radio] { position: absolute; opacity: 0; }
+.sev-label {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--border); background: white;
+    transition: all 0.2s; font-size: 14px; font-weight: 500;
+}
+.sev-option input[type=radio]:checked + .sev-label { border-color: var(--primary); background: rgba(14,165,233,0.1); color: white; }
+
+.emergency-info {
+    background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(239,68,68,0.05));
+    border: 1px solid rgba(239,68,68,0.3); border-radius: 12px; padding: 16px;
+}
+.emergency-num { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; color: var(--danger); }
+
+.checkbox-wrap { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.form-checkbox { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <a href="/" style="color:var(--text-muted); text-decoration:none; font-size:14px;">← Dashboard</a>
+        <h1 style="margin-top:12px;">⚠️ Report a Flood Incident</h1>
+        <p style="color:var(--text-muted); margin-top:8px;">Help your community — submit real-time flood reports with photos and location details</p>
+    </div>
+</div>
+
+<div class="container page-body">
+    <div class="report-layout">
+        <!-- FORM -->
+        <div>
+            <form method="post" enctype="multipart/form-data" id="reportForm">
+                {% csrf_token %}
+
+                <div class="form-card" style="margin-bottom:20px;">
+                    <div class="form-section-title">👤 Your Information</div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Full Name *</label>
+                            {{ form.reporter_name }}
+                            {% if form.reporter_name.errors %}<div class="form-error">{{ form.reporter_name.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Phone Number *</label>
+                            {{ form.reporter_phone }}
+                            {% if form.reporter_phone.errors %}<div class="form-error">{{ form.reporter_phone.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email Address (optional)</label>
+                        {{ form.reporter_email }}
+                    </div>
+                </div>
+
+                <div class="form-card" style="margin-bottom:20px;">
+                    <div class="form-section-title">📍 Incident Location</div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">District *</label>
+                            {{ form.district }}
+                            {% if form.district.errors %}<div class="form-error">{{ form.district.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Exact Location *</label>
+                            {{ form.location }}
+                            {% if form.location.errors %}<div class="form-error">{{ form.location.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-ghost" onclick="getLocation()" style="font-size:13px; padding:8px 14px;">
+                        📌 Auto-detect my GPS location
+                    </button>
+                    <div id="loc-status" style="font-size:12px; margin-top:6px; color:var(--text-muted);"></div>
+                    {{ form.latitude }}
+                    {{ form.longitude }}
+                </div>
+
+                <div class="form-card" style="margin-bottom:20px;">
+                    <div class="form-section-title">🌊 Flood Details</div>
+                    <div class="form-group">
+                        <label class="form-label">Describe the Flood Situation *</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}<div class="form-error">{{ form.description.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Estimated Water Level</label>
+                            {{ form.water_level_estimate }}
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">People Affected</label>
+                            {{ form.people_affected }}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Severity Level *</label>
+                        <div class="severity-grid">
+                            <div class="sev-option">
+                                <input type="radio" name="severity" value="MINOR" id="sev-minor">
+                                <label for="sev-minor" class="sev-label">🟢 Minor — Waterlogging</label>
+                            </div>
+                            <div class="sev-option">
+                                <input type="radio" name="severity" value="MODERATE" id="sev-moderate" checked>
+                                <label for="sev-moderate" class="sev-label">🟡 Moderate — Flooded roads</label>
+                            </div>
+                            <div class="sev-option">
+                                <input type="radio" name="severity" value="SEVERE" id="sev-severe">
+                                <label for="sev-severe" class="sev-label">🔴 Severe — Homes flooded</label>
+                            </div>
+                            <div class="sev-option">
+                                <input type="radio" name="severity" value="CATASTROPHIC" id="sev-catastrophic">
+                                <label for="sev-catastrophic" class="sev-label">🟣 Catastrophic — Life at risk</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-wrap">
+                            {{ form.evacuation_needed }}
+                            <span style="font-size:14px; font-weight:600; color:var(--danger);">🚨 Immediate evacuation required</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-card" style="margin-bottom:20px;">
+                    <div class="form-section-title">📷 Upload Photo Evidence</div>
+                    <div class="photo-drop" id="photo-drop">
+                        {{ form.photo }}
+                        <div id="drop-placeholder">
+                            <div style="font-size:40px; margin-bottom:8px;">📸</div>
+                            <div style="font-weight:600; margin-bottom:4px;">Click to upload or drag & drop</div>
+                            <div style="font-size:13px; color:var(--text-muted);">JPG, PNG, HEIF up to 10MB</div>
+                        </div>
+                        <div class="photo-preview" id="photo-preview">
+                            <img id="preview-img" src="" alt="Preview">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-danger btn-lg" style="width:100%; justify-content:center; font-size:16px; padding:16px;">
+                    🚨 Submit Flood Report
+                </button>
+                <p style="font-size:12px; color:var(--text-muted); text-align:center; margin-top:10px;">
+                    Your report will be reviewed by our team and forwarded to rescue authorities.
+                </p>
+            </form>
+        </div>
+
+        <!-- SIDEBAR -->
+        <div>
+            <div class="emergency-info side-card" style="margin-bottom:16px;">
+                <div style="font-size:12px; color:var(--danger); font-weight:700; margin-bottom:4px;">🆘 EMERGENCY HELPLINE</div>
+                <div class="emergency-num">1077</div>
+                <div style="font-size:13px; color:var(--text-muted);">Kerala Disaster Management Authority</div>
+                <div class="emergency-num" style="font-size:20px; margin-top:8px;">112</div>
+                <div style="font-size:13px; color:var(--text-muted);">National Emergency Number</div>
+            </div>
+
+            <div class="side-card">
+                <div class="side-title">📝 Reporting Tips</div>
+                <div class="tip"><div class="tip-icon">📸</div><div>Upload clear photos showing water level and affected areas</div></div>
+                <div class="tip"><div class="tip-icon">📍</div><div>Use GPS auto-detect for accurate location</div></div>
+                <div class="tip"><div class="tip-icon">👥</div><div>Mention number of people trapped or needing help</div></div>
+                <div class="tip"><div class="tip-icon">📞</div><div>Provide active phone number for rescue team callback</div></div>
+                <div class="tip"><div class="tip-icon">🌊</div><div>Estimate water depth — knee, waist, chest high</div></div>
+            </div>
+
+            <div class="side-card">
+                <div class="side-title">🔍 Track Your Report</div>
+                <p style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">After submitting, track your report status using your phone number.</p>
+                <a href="/my-reports/" class="btn btn-ghost" style="width:100%; justify-content:center;">📋 View My Reports</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Photo preview
+document.querySelector('#id_photo').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            document.getElementById('drop-placeholder').style.display = 'none';
+            document.getElementById('photo-preview').style.display = 'block';
+            document.getElementById('preview-img').src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// GPS Location
+function getLocation() {
+    const status = document.getElementById('loc-status');
+    if (!navigator.geolocation) {
+        status.textContent = 'GPS not supported by your browser.';
+        return;
+    }
+    status.textContent = '📡 Fetching your location...';
+    navigator.geolocation.getCurrentPosition(
+        function(pos) {
+            document.getElementById('id_latitude').value = pos.coords.latitude.toFixed(6);
+            document.getElementById('id_longitude').value = pos.coords.longitude.toFixed(6);
+            status.innerHTML = '✅ Location captured: ' + pos.coords.latitude.toFixed(4) + ', ' + pos.coords.longitude.toFixed(4);
+            status.style.color = 'var(--safe)';
+        },
+        function(err) {
+            status.textContent = '❌ Could not get location. Please enter manually.';
+            status.style.color = 'var(--danger)';
+        }
+    );
+}
+</script>
+{% endblock %}

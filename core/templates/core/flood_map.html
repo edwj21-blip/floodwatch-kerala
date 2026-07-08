@@ -1,0 +1,499 @@
+{% extends 'core/base.html' %}
+{% block title %}District Flood Map — FloodWatch Kerala{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border-bottom: 1px solid var(--border);
+    padding: 32px 0 24px;
+}
+.page-header h1 { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; }
+.map-container {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 24px;
+    align-items: start;
+}
+@media (max-width: 900px) {
+    .map-container { grid-template-columns: 1fr; }
+}
+#kerala-svg-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    position: relative;
+}
+#kerala-svg-wrap svg {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+.district-path {
+    stroke: #fff;
+    stroke-width: 1.5;
+    cursor: pointer;
+    transition: filter 0.3s ease, stroke-width 0.2s;
+}
+.district-path:hover {
+    stroke-width: 2.5;
+    filter: brightness(1.15) drop-shadow(0 0 8px rgba(0,0,0,0.3));
+}
+.district-path.status-NORMAL  { fill: #16a34a; }
+.district-path.status-WATCH   { fill: #ca8a04; }
+.district-path.status-WARNING { fill: #ea580c; }
+.district-path.status-DANGER  { fill: #dc2626; }
+.district-path.status-CRITICAL {
+    fill: #7c3aed;
+    animation: district-pulse 1.2s infinite;
+}
+@keyframes district-pulse {
+    0%,100% { opacity:1; }
+    50%      { opacity:0.65; }
+}
+/* Animated water level bars */
+.water-wave-wrap {
+    position: relative;
+    background: #e2e8f0;
+    border-radius: 8px;
+    height: 18px;
+    overflow: hidden;
+}
+.water-wave-fill {
+    height: 100%;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+    transition: width 1.2s ease;
+}
+.water-wave-fill::after {
+    content: '';
+    position: absolute;
+    top: -4px; left: -20px;
+    width: 200%;
+    height: 200%;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,60 C150,100 350,0 600,60 C850,120 1050,20 1200,60 L1200,120 L0,120 Z' fill='rgba(255,255,255,0.25)'/%3E%3C/svg%3E") repeat-x;
+    background-size: 50% 100%;
+    animation: wave-move 1.8s linear infinite;
+}
+@keyframes wave-move { from{background-position:0 0} to{background-position:100% 0} }
+.map-panel-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.district-list-item {
+    padding: 10px 12px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--bg3);
+}
+.district-list-item:hover { border-color: var(--primary-light); background: var(--primary-bg); }
+.district-list-item.selected { border-color: var(--primary); background: var(--primary-bg); }
+.dlabel { font-size: 13px; font-weight: 600; color: var(--text); }
+.dsub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.map-legend {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    font-size: 12px; margin-top: 16px; align-items: center;
+}
+.leg-item { display: flex; align-items: center; gap: 5px; }
+.leg-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+.map-stats-row {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    gap: 12px; margin-bottom: 20px;
+}
+@media (max-width: 700px) { .map-stats-row { grid-template-columns: repeat(3, 1fr); } }
+.mstat {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px; text-align: center;
+}
+.mstat-num { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; }
+.mstat-lbl { font-size: 10px; color: var(--text-muted); margin-top: 2px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.info-tooltip {
+    position: absolute; z-index: 50;
+    background: #0f172a; color: #fff;
+    padding: 10px 14px; border-radius: 10px;
+    font-size: 12px; white-space: nowrap;
+    pointer-events: none;
+    display: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+.sync-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #f0fdf4; border: 1px solid #86efac;
+    color: #15803d; padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 700;
+}
+.sync-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: #22c55e;
+    animation: blink 1.5s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <a href="/" style="color:var(--text-muted); text-decoration:none; font-size:14px;">← Dashboard</a>
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-top:10px;">
+            <div>
+                <h1>🗺️ Kerala District Flood Map</h1>
+                <p style="color:var(--text-muted); margin-top:6px; font-size:14px;">Real-time water level status across all 14 districts — offline SVG map</p>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <span class="sync-badge"><span class="sync-dot"></span> LIVE — auto-sync every 5 min</span>
+                <span id="map-last-updated" style="font-size:12px; color:var(--text-muted);">Loading…</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container page-body">
+
+    <!-- Stats Row -->
+    <div class="map-stats-row">
+        <div class="mstat"><div class="mstat-num" id="ms-total" style="color:var(--primary)">–</div><div class="mstat-lbl">Stations</div></div>
+        <div class="mstat"><div class="mstat-num" id="ms-critical" style="color:#7c3aed">–</div><div class="mstat-lbl">Critical</div></div>
+        <div class="mstat"><div class="mstat-num" id="ms-danger" style="color:#dc2626">–</div><div class="mstat-lbl">Danger</div></div>
+        <div class="mstat"><div class="mstat-num" id="ms-warning" style="color:#ea580c">–</div><div class="mstat-lbl">Warning</div></div>
+        <div class="mstat"><div class="mstat-num" id="ms-safe" style="color:#16a34a">–</div><div class="mstat-lbl">Safe</div></div>
+    </div>
+
+    <div class="map-container">
+
+        <!-- SVG Map -->
+        <div id="kerala-svg-wrap">
+            <div id="map-tooltip" class="info-tooltip"></div>
+            <svg id="kerala-map" viewBox="0 0 500 900" xmlns="http://www.w3.org/2000/svg">
+                <!-- Kerala Districts SVG Paths — approximate geographic shapes -->
+                <!-- Kasaragod (northernmost) -->
+                <path id="d-Kasaragod" class="district-path status-NORMAL" data-district="Kasaragod"
+                  d="M200,30 L240,28 L270,40 L280,60 L265,80 L245,85 L220,80 L200,65 Z"/>
+                <text x="235" y="62" text-anchor="middle" font-size="9" fill="white" font-weight="600" pointer-events="none">Kasaragod</text>
+
+                <!-- Kannur -->
+                <path id="d-Kannur" class="district-path status-NORMAL" data-district="Kannur"
+                  d="M200,65 L245,85 L265,80 L280,100 L275,130 L255,140 L230,135 L205,120 L195,95 Z"/>
+                <text x="238" y="110" text-anchor="middle" font-size="9" fill="white" font-weight="600" pointer-events="none">Kannur</text>
+
+                <!-- Wayanad (east, inland) -->
+                <path id="d-Wayanad" class="district-path status-NORMAL" data-district="Wayanad"
+                  d="M255,140 L280,100 L310,105 L325,125 L320,155 L295,165 L265,160 Z"/>
+                <text x="293" y="137" text-anchor="middle" font-size="9" fill="white" font-weight="600" pointer-events="none">Wayanad</text>
+
+                <!-- Kozhikode -->
+                <path id="d-Kozhikode" class="district-path status-NORMAL" data-district="Kozhikode"
+                  d="M195,95 L205,120 L230,135 L255,140 L265,160 L250,180 L225,185 L200,175 L185,150 L182,120 Z"/>
+                <text x="223" y="152" text-anchor="middle" font-size="9" fill="white" font-weight="600" pointer-events="none">Kozhikode</text>
+
+                <!-- Malappuram -->
+                <path id="d-Malappuram" class="district-path status-NORMAL" data-district="Malappuram"
+                  d="M182,120 L185,150 L200,175 L225,185 L250,180 L265,160 L295,165 L300,190 L280,215 L255,225 L225,220 L200,210 L175,190 L170,160 L175,135 Z"/>
+                <text x="237" y="198" text-anchor="middle" font-size="9" fill="white" font-weight="600" pointer-events="none">Malappuram</text>
+
+                <!-- Palakkad (east/inland) -->
+                <path id="d-Palakkad" class="district-path status-NORMAL" data-district="Palakkad"
+                  d="M255,225 L280,215 L300,190 L330,195 L355,215 L350,250 L325,265 L295,265 L265,255 Z"/>
+                <text x="308" y="235" text-anchor="middle" font-size="9" fill="white" font-weight="600" pointer-events="none">Palakkad</text>
+
+                <!-- Thrissur -->
+                <path id="d-Thrissur" class="district-path status-NORMAL" data-district="Thrissur"
+                  d="M200,210 L225,220 L255,225 L265,255 L250,280 L220,285 L192,275 L180,250 L182,225 Z"/>
+                <text x="223" y="252" text-anchor="middle" font-size="9" fill="white" font-weight="600" pointer-events="none">Thrissur</text>
+
+                <!-- Ernakulam -->
+                <path id="d-Ernakulam" class="district-path status-NORMAL" data-district="Ernakulam"
+                  d="M180,250 L192,275 L220,285 L250,280 L265,305 L255,335 L225,345 L195,335 L172,315 L168,285 Z"/>
+                <text x="217" y="308" text-anchor="middle" font-size="9" fill="white" font-weight="600" pointer-events="none">Ernakulam</text>
+
+                <!-- Idukki (east/hill district) -->
+                <path id="d-Idukki" class="district-path status-NORMAL" data-district="Idukki"
+                  d="M265,255 L295,265 L325,265 L355,280 L360,320 L340,345 L310,355 L280,345 L255,335 L265,305 Z"/>
+                <text x="310" y="308" text-anchor="middle" font-size="9" fill="white" font-weight="600" pointer-events="none">Idukki</text>
+
+                <!-- Kottayam -->
+                <path id="d-Kottayam" class="district-path status-NORMAL" data-district="Kottayam"
+                  d="M172,315 L195,335 L225,345 L255,335 L280,345 L275,380 L255,400 L225,405 L195,390 L168,370 L165,345 Z"/>
+                <text x="220" y="368" text-anchor="middle" font-size="9" fill="white" font-weight="600" pointer-events="none">Kottayam</text>
+
+                <!-- Pathanamthitta -->
+                <path id="d-Pathanamthitta" class="district-path status-NORMAL" data-district="Pathanamthitta"
+                  d="M255,400 L280,345 L310,355 L340,345 L345,385 L325,415 L295,425 L265,420 Z"/>
+                <text x="300" y="388" text-anchor="middle" font-size="9" fill="white" font-weight="600" pointer-events="none">Pathanamthitta</text>
+
+                <!-- Alappuzha (coastal) -->
+                <path id="d-Alappuzha" class="district-path status-NORMAL" data-district="Alappuzha"
+                  d="M150,390 L168,370 L195,390 L225,405 L255,400 L265,420 L255,450 L225,460 L195,450 L165,435 L145,415 Z"/>
+                <text x="205" y="428" text-anchor="middle" font-size="9" fill="white" font-weight="600" pointer-events="none">Alappuzha</text>
+
+                <!-- Kollam -->
+                <path id="d-Kollam" class="district-path status-NORMAL" data-district="Kollam"
+                  d="M145,415 L165,435 L195,450 L225,460 L255,450 L265,420 L295,425 L305,460 L285,495 L255,510 L220,510 L190,495 L162,475 L145,450 Z"/>
+                <text x="225" y="470" text-anchor="middle" font-size="9" fill="white" font-weight="600" pointer-events="none">Kollam</text>
+
+                <!-- Thiruvananthapuram (southernmost) -->
+                <path id="d-Thiruvananthapuram" class="district-path status-NORMAL" data-district="Thiruvananthapuram"
+                  d="M162,475 L190,495 L220,510 L255,510 L285,495 L300,530 L285,570 L255,585 L220,590 L188,575 L165,545 L152,510 Z"/>
+                <text x="226" y="535" text-anchor="middle" font-size="9" fill="white" font-weight="600" pointer-events="none" style="font-size:8px">Thiruvananthapuram</text>
+
+                <!-- Kerala coastline outline (decorative) -->
+                <path d="M148,28 L142,100 L135,200 L132,300 L138,400 L145,500 L152,560 L165,600" 
+                      fill="none" stroke="#93c5fd" stroke-width="2" opacity="0.4" stroke-dasharray="4,4"/>
+
+                <!-- Arabian Sea label -->
+                <text x="90" y="320" font-size="10" fill="#93c5fd" opacity="0.8" font-style="italic" transform="rotate(-90,90,320)">Arabian Sea</text>
+                <!-- Western Ghats label -->
+                <text x="345" y="280" font-size="9" fill="#86efac" opacity="0.7" font-style="italic" transform="rotate(90,345,280)">Western Ghats</text>
+
+                <!-- Compass -->
+                <g transform="translate(450,50)">
+                    <circle r="16" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+                    <text text-anchor="middle" y="-18" font-size="10" fill="var(--text-muted)" font-weight="700">N</text>
+                    <text text-anchor="middle" y="26" font-size="8" fill="var(--text-muted)">S</text>
+                    <text x="20" text-anchor="middle" y="4" font-size="8" fill="var(--text-muted)">E</text>
+                    <text x="-20" text-anchor="middle" y="4" font-size="8" fill="var(--text-muted)">W</text>
+                    <line x1="0" y1="-12" x2="0" y2="12" stroke="var(--text-muted)" stroke-width="1"/>
+                    <line x1="-12" y1="0" x2="12" y2="0" stroke="var(--text-muted)" stroke-width="1"/>
+                </g>
+            </svg>
+            <!-- Legend -->
+            <div class="map-legend">
+                <strong style="margin-right:4px;">Status:</strong>
+                <span class="leg-item"><span class="leg-dot" style="background:#7c3aed"></span>Critical</span>
+                <span class="leg-item"><span class="leg-dot" style="background:#dc2626"></span>Danger</span>
+                <span class="leg-item"><span class="leg-dot" style="background:#ea580c"></span>Warning</span>
+                <span class="leg-item"><span class="leg-dot" style="background:#ca8a04"></span>Watch</span>
+                <span class="leg-item"><span class="leg-dot" style="background:#16a34a"></span>Normal</span>
+            </div>
+        </div>
+
+        <!-- Right Panel: District List + Detail -->
+        <div>
+            <div class="map-panel-card" style="margin-bottom:16px;">
+                <div style="font-family:'Syne',sans-serif; font-size:16px; font-weight:800; margin-bottom:14px; color:var(--text);">
+                    📍 All 14 Districts
+                </div>
+                <div id="district-list" style="max-height:420px; overflow-y:auto;">
+                    <!-- Populated by JS -->
+                    <div style="text-align:center; padding:30px; color:var(--text-muted);">Loading districts…</div>
+                </div>
+            </div>
+
+            <!-- Selected District Detail -->
+            <div class="map-panel-card" id="district-detail" style="display:none;">
+                <div style="font-family:'Syne',sans-serif; font-size:15px; font-weight:800; margin-bottom:14px; color:var(--text);" id="dd-title">District Detail</div>
+                <div id="dd-content"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    const KERALA_DISTRICTS = [
+        'Kasaragod','Kannur','Wayanad','Kozhikode','Malappuram',
+        'Palakkad','Thrissur','Ernakulam','Idukki','Kottayam',
+        'Pathanamthitta','Alappuzha','Kollam','Thiruvananthapuram'
+    ];
+
+    const STATUS_COLOR = {
+        CRITICAL:'#7c3aed', DANGER:'#dc2626',
+        WARNING:'#ea580c', WATCH:'#ca8a04', NORMAL:'#16a34a'
+    };
+
+    let districtData = {}; // district name → aggregated data
+    let selectedDistrict = null;
+
+    // Aggregate water level stations by district
+    function aggregateByDistrict(levels) {
+        const map = {};
+        KERALA_DISTRICTS.forEach(d => {
+            map[d] = { district: d, stations: [], worstStatus: 'NORMAL', avgLevel: 0, maxRainfall: 0 };
+        });
+        levels.forEach(loc => {
+            const d = loc.district;
+            if (map[d]) {
+                map[d].stations.push(loc);
+            } else {
+                // Try partial match
+                const key = KERALA_DISTRICTS.find(k => d && d.toLowerCase().includes(k.toLowerCase()));
+                if (key) map[key].stations.push(loc);
+            }
+        });
+
+        const statusOrder = ['CRITICAL','DANGER','WARNING','WATCH','NORMAL'];
+        Object.keys(map).forEach(d => {
+            const s = map[d].stations;
+            if (s.length) {
+                // Worst status wins
+                let worst = 'NORMAL';
+                s.forEach(st => {
+                    if (statusOrder.indexOf(st.status) < statusOrder.indexOf(worst)) {
+                        worst = st.status;
+                    }
+                });
+                map[d].worstStatus = worst;
+                map[d].avgLevel = (s.reduce((a,b) => a + (b.current_level||0), 0) / s.length).toFixed(2);
+                map[d].maxRainfall = Math.max(...s.map(st => st.rainfall_mm||0));
+            }
+        });
+        return map;
+    }
+
+    // Update SVG district colors
+    function updateSVG(dmap) {
+        KERALA_DISTRICTS.forEach(d => {
+            const el = document.getElementById('d-' + d);
+            if (!el) return;
+            const info = dmap[d];
+            const status = info ? info.worstStatus : 'NORMAL';
+            el.className.baseVal = 'district-path status-' + status;
+        });
+    }
+
+    // Update stats row
+    function updateStats(dmap) {
+        const vals = Object.values(dmap);
+        document.getElementById('ms-total').textContent = vals.reduce((a,b) => a + b.stations.length, 0);
+        document.getElementById('ms-critical').textContent = vals.filter(v => v.worstStatus==='CRITICAL').length;
+        document.getElementById('ms-danger').textContent   = vals.filter(v => v.worstStatus==='DANGER').length;
+        document.getElementById('ms-warning').textContent  = vals.filter(v => v.worstStatus==='WARNING').length;
+        document.getElementById('ms-safe').textContent     = vals.filter(v => ['NORMAL','WATCH'].includes(v.worstStatus)).length;
+    }
+
+    // Render district list
+    function renderDistrictList(dmap) {
+        const el = document.getElementById('district-list');
+        const statusOrder = ['CRITICAL','DANGER','WARNING','WATCH','NORMAL'];
+        const sorted = [...KERALA_DISTRICTS].sort((a,b) => {
+            const sa = dmap[a]?.worstStatus || 'NORMAL';
+            const sb = dmap[b]?.worstStatus || 'NORMAL';
+            return statusOrder.indexOf(sa) - statusOrder.indexOf(sb);
+        });
+        el.innerHTML = sorted.map(d => {
+            const info = dmap[d] || {};
+            const status = info.worstStatus || 'NORMAL';
+            const color = STATUS_COLOR[status];
+            const stationCount = (info.stations||[]).length;
+            const rain = info.maxRainfall > 0 ? `🌧️ ${info.maxRainfall}mm` : '';
+            return `
+              <div class="district-list-item ${selectedDistrict===d?'selected':''}"
+                   onclick="selectDistrict('${d}')" data-d="${d}">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <div class="dlabel">
+                        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:5px;"></span>
+                        ${d}
+                    </div>
+                    <span style="font-size:10px; font-weight:700; color:${color}; background:${color}18; padding:2px 7px; border-radius:8px;">${status}</span>
+                </div>
+                <div class="dsub">${stationCount} station${stationCount!==1?'s':''} ${rain}</div>
+              </div>`;
+        }).join('');
+    }
+
+    // Select and highlight a district
+    window.selectDistrict = function(d) {
+        selectedDistrict = d;
+        // Highlight in list
+        document.querySelectorAll('.district-list-item').forEach(el => {
+            el.classList.toggle('selected', el.dataset.d === d);
+        });
+        // Highlight SVG
+        document.querySelectorAll('.district-path').forEach(el => {
+            el.style.opacity = el.dataset.district === d ? '1' : '0.55';
+        });
+        // Show detail panel
+        const info = districtData[d] || {};
+        const status = info.worstStatus || 'NORMAL';
+        const color = STATUS_COLOR[status];
+        const stations = info.stations || [];
+        const panel = document.getElementById('district-detail');
+        const ddTitle = document.getElementById('dd-title');
+        const ddContent = document.getElementById('dd-content');
+        ddTitle.innerHTML = `📍 ${d} — <span style="color:${color}">${status}</span>`;
+        ddContent.innerHTML = stations.length === 0
+          ? `<p style="color:var(--text-muted); font-size:13px;">No monitoring stations in database for this district yet.</p>`
+          : stations.map(st => {
+            const pct = st.danger_level > 0 ? Math.min(Math.round((st.current_level/st.danger_level)*100),100) : 0;
+            const sc = STATUS_COLOR[st.status] || '#16a34a';
+            return `
+              <div style="margin-bottom:12px; padding:11px; background:var(--bg3); border-radius:10px; border:1px solid var(--border); border-left:3px solid ${sc};">
+                <div style="font-size:12px; font-weight:700; color:var(--text); margin-bottom:6px;">${st.location}</div>
+                <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px; display:flex; gap:12px; flex-wrap:wrap;">
+                    <span>💧 ${st.current_level}m / ${st.danger_level}m</span>
+                    ${st.rainfall_mm>0?`<span>🌧️ ${st.rainfall_mm}mm</span>`:''}
+                </div>
+                <div class="water-wave-wrap">
+                  <div class="water-wave-fill" style="width:${pct}%; background:${sc};"></div>
+                </div>
+                <div style="font-size:10px; color:${sc}; font-weight:700; margin-top:4px; text-align:right;">${pct}% of danger level</div>
+              </div>`;
+          }).join('');
+        panel.style.display = 'block';
+    };
+
+    // SVG district click + tooltip
+    document.querySelectorAll('.district-path').forEach(el => {
+        const d = el.dataset.district;
+        const tooltip = document.getElementById('map-tooltip');
+        el.addEventListener('click', () => selectDistrict(d));
+        el.addEventListener('mouseenter', (e) => {
+            const info = districtData[d] || {};
+            const status = info.worstStatus || 'NORMAL';
+            const color = STATUS_COLOR[status];
+            tooltip.style.display = 'block';
+            tooltip.style.color = color;
+            tooltip.innerHTML = `<strong>${d}</strong> — ${status}  |  ${(info.stations||[]).length} stations`;
+        });
+        el.addEventListener('mousemove', (e) => {
+            const wrap = document.getElementById('kerala-svg-wrap');
+            const rect = wrap.getBoundingClientRect();
+            tooltip.style.left = (e.clientX - rect.left + 12) + 'px';
+            tooltip.style.top  = (e.clientY - rect.top - 10) + 'px';
+        });
+        el.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+    });
+
+    // Reset opacity when clicking elsewhere
+    document.getElementById('kerala-map').addEventListener('click', function(e) {
+        if (e.target === this || e.target.tagName === 'text') {
+            document.querySelectorAll('.district-path').forEach(el => el.style.opacity = '1');
+            selectedDistrict = null;
+            document.getElementById('district-detail').style.display = 'none';
+            document.querySelectorAll('.district-list-item').forEach(el => el.classList.remove('selected'));
+        }
+    });
+
+    // Load and refresh
+    async function loadMap() {
+        try {
+            const res  = await fetch('/api/water-levels/?t=' + Date.now());
+            const json = await res.json();
+            const data = json.water_levels || json;
+            districtData = aggregateByDistrict(data);
+            updateSVG(districtData);
+            updateStats(districtData);
+            renderDistrictList(districtData);
+            if (selectedDistrict) selectDistrict(selectedDistrict); // refresh detail panel
+            document.getElementById('map-last-updated').textContent =
+                'Last sync: ' + new Date().toLocaleTimeString('en-IN');
+        } catch(e) {
+            document.getElementById('map-last-updated').textContent = '⚠️ Could not load data';
+        }
+    }
+
+    loadMap();
+    setInterval(loadMap, 300000); // refresh every 5 minutes = real-time
+})();
+</script>
+{% endblock %}

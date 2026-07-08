@@ -1,0 +1,5 @@
+Django>=4.2,<5.0
+Pillow>=10.0          # Required for photo uploads (FloodReport.photo ImageField)
+reportlab>=4.0        # Feature 7: PDF district reports  (pip install reportlab)
+python-dotenv>=1.0    # Loads secrets from .env file
+# requests is optional — weather API uses stdlib urllib (no extra install needed)

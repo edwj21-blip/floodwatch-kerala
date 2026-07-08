@@ -1,0 +1,330 @@
+{% extends 'core/base.html' %}
+{% block title %}{{ shelter.name }} — FloodWatch Kerala{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header { background: linear-gradient(135deg, var(--bg), var(--bg2)); border-bottom: 1px solid var(--border); padding: 40px 0; }
+.page-header h1 { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; }
+
+.badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+.badge-open { background: rgba(34,197,94,0.15); color: #16a34a; border: 1px solid rgba(34,197,94,0.3); }
+.badge-full { background: rgba(239,68,68,0.15); color: #dc2626; border: 1px solid rgba(239,68,68,0.3); }
+.badge-closed { background: rgba(100,116,139,0.15); color: #64748b; border: 1px solid rgba(100,116,139,0.3); }
+.badge-standby { background: rgba(251,191,36,0.15); color: #d97706; border: 1px solid rgba(251,191,36,0.3); }
+
+.info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.info-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; text-align: center; }
+.info-num { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; }
+.info-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+.capacity-bar-track { background: var(--border); border-radius: 99px; height: 10px; overflow: hidden; margin: 8px 0; }
+.capacity-bar-fill { height: 10px; border-radius: 99px; transition: width 0.5s ease; }
+.bar-green { background: linear-gradient(90deg, #22c55e, #16a34a); }
+.bar-yellow { background: linear-gradient(90deg, #f59e0b, #d97706); }
+.bar-orange { background: linear-gradient(90deg, #f97316, #ea580c); }
+.bar-red { background: linear-gradient(90deg, #ef4444, #dc2626); }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media(max-width:768px){ .two-col { grid-template-columns: 1fr; } }
+
+.section-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+.section-title { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; margin-bottom: 18px; display:flex; align-items:center; gap:8px; }
+
+.btn-primary { background: var(--primary); color: white; border: none; border-radius: 8px; padding: 10px 20px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.btn-primary:hover { opacity: 0.85; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-danger { background: rgba(239,68,68,0.1); color: #dc2626; border: 1px solid rgba(239,68,68,0.3); }
+
+.person-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); gap: 12px; flex-wrap: wrap; }
+.person-row:last-child { border-bottom: none; }
+.person-name { font-weight: 600; font-size: 14px; }
+.person-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+.token-badge { font-family: 'Syne', sans-serif; font-size: 11px; background: var(--bg2); border: 1px solid var(--border); color: var(--text-muted); padding: 2px 8px; border-radius: 6px; }
+.medical-flag { background: rgba(239,68,68,0.1); color: #dc2626; border: 1px solid rgba(239,68,68,0.25); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
+.form-input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 9px 12px; font-family: inherit; font-size: 13px; box-sizing: border-box; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-check { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 6px 0; }
+
+.amenity-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 4px 10px; border-radius: 20px; margin: 3px; }
+.amenity-yes { background: rgba(34,197,94,0.12); color: #16a34a; border: 1px solid rgba(34,197,94,0.25); }
+.amenity-no { background: var(--bg2); color: var(--text-muted); border: 1px solid var(--border); }
+
+.team-assign-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.team-assign-row:last-child { border-bottom: none; }
+.assigned-tag { background: rgba(14,165,233,0.1); color: var(--primary); border: 1px solid rgba(14,165,233,0.2); border-radius: 6px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
+
+.empty-state { text-align: center; padding: 32px 0; color: var(--text-muted); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="container">
+    <a href="/shelters/" style="color:var(--text-muted);text-decoration:none;font-size:14px;">← All Shelters</a>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-top:12px;">
+      <div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <h1>{{ shelter.name }}</h1>
+          <span class="badge badge-{{ shelter.status|lower }}">{{ shelter.get_status_display }}</span>
+        </div>
+        <p style="color:var(--text-muted);margin-top:6px;">📍 {{ shelter.address }}, {{ shelter.district }} · {{ shelter.get_shelter_type_display }}</p>
+      </div>
+      {% if shelter.contact_phone %}
+      <a href="tel:{{ shelter.contact_phone }}" class="btn-primary">📞 {{ shelter.contact_person }} · {{ shelter.contact_phone }}</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="container page-body">
+
+  <!-- Stats row -->
+  <div class="info-grid" style="margin-bottom:24px;">
+    <div class="info-card">
+      <div class="info-num" style="color:var(--primary)">{{ shelter.current_occupancy }}</div>
+      <div class="info-label">Currently Occupied</div>
+    </div>
+    <div class="info-card">
+      <div class="info-num" style="color:#22c55e">{{ shelter.available_capacity }}</div>
+      <div class="info-label">Available Beds</div>
+    </div>
+    <div class="info-card">
+      <div class="info-num">{{ shelter.total_capacity }}</div>
+      <div class="info-label">Total Capacity</div>
+    </div>
+    <div class="info-card">
+      <div class="info-num" style="color:#f59e0b">{{ persons.count }}</div>
+      <div class="info-label">People Checked In</div>
+    </div>
+  </div>
+
+  <!-- Occupancy bar -->
+  <div class="section-card" style="margin-bottom:24px;">
+    {% with pct=shelter.occupancy_pct %}
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+      <span style="font-weight:600;">Occupancy</span>
+      <span style="color:var(--text-muted);font-size:14px;">{{ pct }}%</span>
+    </div>
+    <div class="capacity-bar-track">
+      <div class="capacity-bar-fill {% if pct >= 95 %}bar-red{% elif pct >= 80 %}bar-orange{% elif pct >= 60 %}bar-yellow{% else %}bar-green{% endif %}"
+           style="width:{{ pct }}%"></div>
+    </div>
+    {% endwith %}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
+      <span class="amenity-pill {% if shelter.has_medical %}amenity-yes{% else %}amenity-no{% endif %}">🏥 Medical</span>
+      <span class="amenity-pill {% if shelter.has_food %}amenity-yes{% else %}amenity-no{% endif %}">🍱 Food</span>
+      <span class="amenity-pill {% if shelter.has_water %}amenity-yes{% else %}amenity-no{% endif %}">💧 Water</span>
+      <span class="amenity-pill {% if shelter.has_power %}amenity-yes{% else %}amenity-no{% endif %}">⚡ Power</span>
+      <span class="amenity-pill {% if shelter.has_toilets %}amenity-yes{% else %}amenity-no{% endif %}">🚻 Toilets</span>
+    </div>
+  </div>
+
+  <div class="two-col">
+
+    <!-- Left: Displaced Persons -->
+    <div>
+      <!-- Check-in form -->
+      {% if shelter.status != 'CLOSED' and shelter.available_capacity > 0 %}
+      <div class="section-card" style="margin-bottom:20px;">
+        <div class="section-title">➕ Check-In Person</div>
+        <form method="post" action="/shelters/{{ shelter.id }}/checkin/">
+          {% csrf_token %}
+          <div class="form-group">
+            <label>Full Name *</label>
+            <input class="form-input" name="name" required placeholder="e.g. Rajan Pillai">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Age</label>
+              <input class="form-input" name="age" type="number" min="0" max="120" placeholder="Age">
+            </div>
+            <div class="form-group">
+              <label>Gender</label>
+              <select class="form-input" name="gender">
+                <option value="">—</option>
+                <option value="M">Male</option>
+                <option value="F">Female</option>
+                <option value="O">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Phone</label>
+              <input class="form-input" name="phone" placeholder="9447XXXXXX">
+            </div>
+            <div class="form-group">
+              <label>Family Members (incl. self)</label>
+              <input class="form-input" name="family_size" type="number" min="1" value="1" max="{{ shelter.available_capacity }}">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Home Address</label>
+            <input class="form-input" name="home_address" placeholder="Village / Panchayath / Town">
+          </div>
+          <div class="form-group">
+            <label>Home District</label>
+            <select class="form-input" name="home_district">
+              <option value="">—</option>
+              <option>Thiruvananthapuram</option><option>Kollam</option><option>Pathanamthitta</option>
+              <option>Alappuzha</option><option>Kottayam</option><option>Idukki</option>
+              <option>Ernakulam</option><option>Thrissur</option><option>Palakkad</option>
+              <option>Malappuram</option><option>Kozhikode</option><option>Wayanad</option>
+              <option>Kannur</option><option>Kasaragod</option>
+            </select>
+          </div>
+          <label class="form-check">
+            <input type="checkbox" name="needs_medical"> 🏥 Requires medical attention
+          </label>
+          <div class="form-group" style="margin-top:10px;">
+            <label>Notes</label>
+            <input class="form-input" name="notes" placeholder="Any special needs...">
+          </div>
+          <button type="submit" class="btn-primary" style="width:100%;justify-content:center;margin-top:4px;">
+            ✅ Check In
+          </button>
+        </form>
+      </div>
+      {% elif shelter.status == 'FULL' %}
+      <div class="section-card" style="margin-bottom:20px;border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.04);">
+        <div style="text-align:center;padding:16px;color:#dc2626;">
+          <div style="font-size:28px;margin-bottom:8px;">🚫</div>
+          <div style="font-weight:700;">Shelter at Full Capacity</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">Check out residents to free up space.</div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- People list -->
+      <div class="section-card">
+        <div class="section-title">👥 Checked-In Persons ({{ persons.count }})</div>
+        {% if persons %}
+          {% for p in persons %}
+          <div class="person-row">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <span class="person-name">{{ p.name }}</span>
+                <span class="token-badge">#{{ p.id }}</span>
+                {% if p.needs_medical %}<span class="medical-flag">⚠️ Medical</span>{% endif %}
+              </div>
+              <div class="person-meta">
+                {% if p.age %}{{ p.age }}y · {% endif %}
+                {% if p.gender %}{{ p.get_gender_display }} · {% endif %}
+                Family of {{ p.family_size }} ·
+                {% if p.home_district %}{{ p.home_district }} · {% endif %}
+                In since {{ p.checked_in_at|date:"d M, g:i A" }}
+              </div>
+              {% if p.phone %}<div class="person-meta">📞 {{ p.phone }}</div>{% endif %}
+            </div>
+            <form method="post" action="/shelters/{{ shelter.id }}/checkout/{{ p.id }}/" style="flex-shrink:0;">
+              {% csrf_token %}
+              <button type="submit" class="btn-primary btn-sm btn-danger"
+                onclick="return confirm('Check out {{ p.name }}?')">
+                Check Out
+              </button>
+            </form>
+          </div>
+          {% endfor %}
+        {% else %}
+        <div class="empty-state">
+          <div style="font-size:32px;margin-bottom:8px;">👤</div>
+          No one checked in yet.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Right: Rescue Teams -->
+    <div>
+      <div class="section-card" style="margin-bottom:20px;">
+        <div class="section-title">🚁 Assigned Rescue Teams ({{ shelter.assigned_teams.count }})</div>
+        {% if shelter.assigned_teams.all %}
+          {% for team in shelter.assigned_teams.all %}
+          <div class="team-assign-row">
+            <div>
+              <div style="font-weight:600;font-size:14px;">{{ team.name }}</div>
+              <div style="font-size:12px;color:var(--text-muted);">
+                {{ team.get_team_type_display }} · {{ team.district }}
+                {% if team.contact_number %} · 📞 {{ team.contact_number }}{% endif %}
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="assigned-tag">Assigned</span>
+              <form method="post" action="/shelters/{{ shelter.id }}/assign-team/">
+                {% csrf_token %}
+                <input type="hidden" name="team_id" value="{{ team.id }}">
+                <input type="hidden" name="action" value="remove">
+                <button type="submit" class="btn-primary btn-sm btn-danger"
+                  onclick="return confirm('Remove this team?')">✕</button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+        <div class="empty-state" style="padding:20px 0;">
+          <div style="font-size:28px;margin-bottom:8px;">🚁</div>
+          No rescue teams assigned yet.
+        </div>
+        {% endif %}
+
+        <!-- Assign team form -->
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:10px;font-weight:600;">Assign a Team</div>
+          <form method="post" action="/shelters/{{ shelter.id }}/assign-team/" style="display:flex;gap:10px;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="assign">
+            <select name="team_id" class="form-input" style="flex:1;">
+              <option value="">Select rescue team…</option>
+              {% for team in all_teams %}
+              {% if team not in shelter.assigned_teams.all %}
+              <option value="{{ team.id }}">{{ team.name }} ({{ team.district }})</option>
+              {% endif %}
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn-primary" style="white-space:nowrap;">Assign</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Shelter info -->
+      <div class="section-card">
+        <div class="section-title">ℹ️ Shelter Info</div>
+        {% if shelter.notes %}
+        <p style="font-size:14px;color:var(--text-muted);margin-bottom:14px;">{{ shelter.notes }}</p>
+        {% endif %}
+        <div style="font-size:13px;">
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+            <span style="color:var(--text-muted);">Type</span>
+            <span>{{ shelter.get_shelter_type_display }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+            <span style="color:var(--text-muted);">District</span>
+            <span>{{ shelter.district }}</span>
+          </div>
+          {% if shelter.contact_person %}
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+            <span style="color:var(--text-muted);">Contact</span>
+            <span>{{ shelter.contact_person }}{% if shelter.contact_phone %} · {{ shelter.contact_phone }}{% endif %}</span>
+          </div>
+          {% endif %}
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+            <span style="color:var(--text-muted);">Last Updated</span>
+            <span>{{ shelter.updated_at|date:"d M Y, g:i A" }}</span>
+          </div>
+          {% if shelter.latitude and shelter.longitude %}
+          <div style="display:flex;justify-content:space-between;padding:8px 0;">
+            <span style="color:var(--text-muted);">Coordinates</span>
+            <a href="https://maps.google.com/?q={{ shelter.latitude }},{{ shelter.longitude }}" target="_blank"
+               style="color:var(--primary);text-decoration:none;">{{ shelter.latitude|floatformat:4 }}, {{ shelter.longitude|floatformat:4 }} 🗺️</a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends 'core/base.html' %}
+{% block title %}Report Submitted — FloodWatch Kerala{% endblock %}
+{% block content %}
+<div class="container page-body" style="max-width:640px; text-align:center; padding-top:80px;">
+    <div style="font-size:72px; margin-bottom:20px; animation: bounce 1s ease;">✅</div>
+    <h1 style="font-family:'Syne',sans-serif; font-size:28px; font-weight:800; margin-bottom:12px;">Report Submitted!</h1>
+    <p style="color:var(--text-muted); font-size:16px; margin-bottom:28px; line-height:1.6;">
+        Your flood report <strong style="color:var(--primary);">#{{ report.id }}</strong> has been received. Our team will review it and coordinate with rescue authorities.
+    </p>
+
+    <div class="card" style="text-align:left; margin-bottom:24px;">
+        <div style="font-weight:700; margin-bottom:16px; font-size:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">📋 Report Summary</div>
+        <div style="display:flex; flex-direction:column; gap:10px; font-size:14px;">
+            <div style="display:flex; gap:12px;"><span style="color:var(--text-muted); width:120px; flex-shrink:0;">Report ID</span><strong>#{{ report.id }}</strong></div>
+            <div style="display:flex; gap:12px;"><span style="color:var(--text-muted); width:120px; flex-shrink:0;">Location</span><span>{{ report.location }}, {{ report.district }}</span></div>
+            <div style="display:flex; gap:12px;"><span style="color:var(--text-muted); width:120px; flex-shrink:0;">Severity</span><span class="badge badge-{{ report.severity|lower }}">{{ report.severity }}</span></div>
+            <div style="display:flex; gap:12px;"><span style="color:var(--text-muted); width:120px; flex-shrink:0;">Status</span><span class="badge badge-pending">Pending Review</span></div>
+            <div style="display:flex; gap:12px;"><span style="color:var(--text-muted); width:120px; flex-shrink:0;">Submitted</span><span>{{ report.reported_at|date:"d M Y, g:i A" }}</span></div>
+            {% if report.evacuation_needed %}
+            <div style="display:flex; gap:12px; color:var(--danger); font-weight:700;"><span>🚨</span><span>Evacuation assistance requested</span></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+        <a href="/" class="btn btn-ghost">🏠 Back to Dashboard</a>
+        <a href="/my-reports/?phone={{ report.reporter_phone }}" class="btn btn-primary">📋 Track My Reports</a>
+        <a href="/report/" class="btn btn-ghost">+ Submit Another</a>
+    </div>
+
+    <div style="margin-top:32px; padding:16px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:12px;">
+        <div style="font-size:13px; color:var(--text-muted);">If this is a life-threatening emergency, call immediately:</div>
+        <div style="font-family:'Syne',sans-serif; font-size:28px; font-weight:800; color:var(--danger);">1077</div>
+    </div>
+</div>
+<style>@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }</style>
+{% endblock %}

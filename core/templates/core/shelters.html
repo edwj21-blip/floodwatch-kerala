@@ -1,0 +1,265 @@
+{% extends 'core/base.html' %}
+{% block title %}Emergency Shelters — FloodWatch Kerala{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header { background: linear-gradient(135deg, var(--bg), var(--bg2)); border-bottom: 1px solid var(--border); padding: 40px 0; }
+.page-header h1 { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; margin-bottom: 32px; }
+.stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; text-align: center; }
+.stat-num { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; }
+.stat-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.shelter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+.shelter-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px; transition: all 0.2s; position: relative; overflow: hidden; }
+.shelter-card:hover { border-color: var(--primary); box-shadow: 0 4px 24px rgba(14,165,233,0.1); }
+.shelter-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.shelter-name { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; line-height: 1.3; }
+.shelter-district { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.badge-open { background: rgba(34,197,94,0.15); color: #16a34a; border: 1px solid rgba(34,197,94,0.3); }
+.badge-full { background: rgba(239,68,68,0.15); color: #dc2626; border: 1px solid rgba(239,68,68,0.3); }
+.badge-closed { background: rgba(100,116,139,0.15); color: #64748b; border: 1px solid rgba(100,116,139,0.3); }
+.badge-standby { background: rgba(251,191,36,0.15); color: #d97706; border: 1px solid rgba(251,191,36,0.3); }
+
+.capacity-bar-wrap { margin: 12px 0; }
+.capacity-bar-track { background: var(--border); border-radius: 99px; height: 8px; overflow: hidden; }
+.capacity-bar-fill { height: 8px; border-radius: 99px; transition: width 0.4s ease; }
+.bar-green { background: #22c55e; }
+.bar-yellow { background: #f59e0b; }
+.bar-orange { background: #f97316; }
+.bar-red { background: #ef4444; }
+.capacity-text { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+
+.amenities { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.amenity { font-size: 12px; background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; color: var(--text-muted); }
+.amenity.yes { color: #16a34a; background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.2); }
+
+.teams-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.team-tag { font-size: 11px; background: rgba(14,165,233,0.1); border: 1px solid rgba(14,165,233,0.2); color: var(--primary); border-radius: 6px; padding: 3px 8px; }
+
+.filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 28px; align-items: center; }
+.filter-select { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 8px 14px; font-family: inherit; font-size: 13px; }
+
+.btn-primary { background: var(--primary); color: white; border: none; border-radius: 8px; padding: 8px 18px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.btn-primary:hover { opacity: 0.85; }
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal-box { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 32px; max-width: 520px; width: 90%; max-height: 90vh; overflow-y: auto; }
+.modal-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; margin-bottom: 24px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+.form-input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 10px 14px; font-family: inherit; font-size: 14px; box-sizing: border-box; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-check { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 8px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="container">
+    <a href="/" style="color:var(--text-muted);text-decoration:none;font-size:14px;">← Dashboard</a>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-top:12px;">
+      <div>
+        <h1>🏠 Emergency Shelters</h1>
+        <p style="color:var(--text-muted);margin-top:6px;">Relief centres & displaced persons across Kerala</p>
+      </div>
+      {% if user.is_staff %}
+      <button class="btn-primary" onclick="document.getElementById('addShelterModal').classList.add('open')">
+        + Add Shelter
+      </button>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="container page-body">
+
+  <!-- Stats -->
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-num" style="color:var(--primary)">{{ stats.total_shelters }}</div>
+      <div class="stat-label">Total Shelters</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:#22c55e">{{ stats.open_shelters }}</div>
+      <div class="stat-label">Open</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:#ef4444">{{ stats.full_shelters }}</div>
+      <div class="stat-label">At Capacity</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:#f59e0b">{{ stats.total_displaced }}</div>
+      <div class="stat-label">Displaced Persons</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">{{ stats.total_capacity }}</div>
+      <div class="stat-label">Total Capacity</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:#0ea5e9">{{ stats.total_capacity|add:"-"|add:stats.total_occupancy }}</div>
+      <div class="stat-label">Beds Available</div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <form method="get" class="filter-bar">
+    <select name="district" class="filter-select" onchange="this.form.submit()">
+      <option value="">All Districts</option>
+      {% for d in districts %}
+      <option value="{{ d }}" {% if d == selected_district %}selected{% endif %}>{{ d }}</option>
+      {% endfor %}
+    </select>
+    <select name="status" class="filter-select" onchange="this.form.submit()">
+      <option value="">All Statuses</option>
+      <option value="OPEN" {% if selected_status == 'OPEN' %}selected{% endif %}>Open</option>
+      <option value="FULL" {% if selected_status == 'FULL' %}selected{% endif %}>Full</option>
+      <option value="CLOSED" {% if selected_status == 'CLOSED' %}selected{% endif %}>Closed</option>
+      <option value="STANDBY" {% if selected_status == 'STANDBY' %}selected{% endif %}>Standby</option>
+    </select>
+    {% if selected_district or selected_status %}
+    <a href="/shelters/" style="color:var(--text-muted);font-size:13px;text-decoration:none;">✕ Clear</a>
+    {% endif %}
+  </form>
+
+  <!-- Shelter cards -->
+  {% if shelters %}
+  <div class="shelter-grid">
+    {% for s in shelters %}
+    {% with pct=s.occupancy_pct %}
+    <div class="shelter-card">
+      <div class="shelter-card-header">
+        <div>
+          <div class="shelter-name">{{ s.name }}</div>
+          <div class="shelter-district">📍 {{ s.district }} · {{ s.get_shelter_type_display }}</div>
+        </div>
+        <span class="badge badge-{{ s.status|lower }}">{{ s.get_status_display }}</span>
+      </div>
+
+      <!-- Capacity bar -->
+      <div class="capacity-bar-wrap">
+        <div class="capacity-bar-track">
+          <div class="capacity-bar-fill {% if pct >= 95 %}bar-red{% elif pct >= 80 %}bar-orange{% elif pct >= 60 %}bar-yellow{% else %}bar-green{% endif %}"
+               style="width:{{ pct }}%"></div>
+        </div>
+        <div class="capacity-text">
+          <span>{{ s.current_occupancy }} occupied</span>
+          <span>{{ s.available_capacity }} available / {{ s.total_capacity }}</span>
+        </div>
+      </div>
+
+      <!-- Amenities -->
+      <div class="amenities">
+        <span class="amenity {% if s.has_medical %}yes{% endif %}">🏥 Medical</span>
+        <span class="amenity {% if s.has_food %}yes{% endif %}">🍱 Food</span>
+        <span class="amenity {% if s.has_water %}yes{% endif %}">💧 Water</span>
+        <span class="amenity {% if s.has_power %}yes{% endif %}">⚡ Power</span>
+        <span class="amenity {% if s.has_toilets %}yes{% endif %}">🚻 Toilets</span>
+      </div>
+
+      {% if s.assigned_teams.all %}
+      <div class="teams-row">
+        {% for t in s.assigned_teams.all %}
+        <span class="team-tag">🚁 {{ t.name }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div style="margin-top:14px;display:flex;gap:10px;">
+        <a href="/shelters/{{ s.id }}/" class="btn-primary btn-sm">View / Manage →</a>
+        {% if s.contact_phone %}
+        <a href="tel:{{ s.contact_phone }}" class="btn-primary btn-sm" style="background:var(--bg2);color:var(--text);border:1px solid var(--border);">📞 Contact</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endwith %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:60px 0;color:var(--text-muted);">
+    <div style="font-size:48px;margin-bottom:16px;">🏠</div>
+    <p>No shelters found matching your filters.</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- Add Shelter Modal -->
+{% if user.is_staff %}
+<div id="addShelterModal" class="modal-overlay" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-box">
+    <div class="modal-title">🏠 Add New Shelter</div>
+    <form method="post" action="/shelters/add/">
+      {% csrf_token %}
+      <div class="form-group">
+        <label>Shelter Name *</label>
+        <input class="form-input" name="name" required placeholder="e.g. Govt HSS Palakkad">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Type</label>
+          <select class="form-input" name="shelter_type">
+            <option value="SCHOOL">School / College</option>
+            <option value="COMMUNITY">Community Hall</option>
+            <option value="TEMPLE">Temple / Church / Mosque</option>
+            <option value="GOVT">Government Building</option>
+            <option value="STADIUM">Stadium</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>District *</label>
+          <select class="form-input" name="district" required>
+            {% for d in kerala_districts %}
+            <option value="{{ d }}">{{ d }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Address</label>
+        <input class="form-input" name="address" placeholder="Full address">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Total Capacity</label>
+          <input class="form-input" name="total_capacity" type="number" value="100" min="1">
+        </div>
+        <div class="form-group">
+          <label>Contact Person</label>
+          <input class="form-input" name="contact_person" placeholder="Name">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Contact Phone</label>
+        <input class="form-input" name="contact_phone" placeholder="9447XXXXXX">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="font-size:13px;color:var(--text-muted);display:block;margin-bottom:10px;">Facilities Available</label>
+        <label class="form-check"><input type="checkbox" name="has_medical"> 🏥 Medical</label>
+        <label class="form-check"><input type="checkbox" name="has_food" checked> 🍱 Food</label>
+        <label class="form-check"><input type="checkbox" name="has_water" checked> 💧 Water</label>
+        <label class="form-check"><input type="checkbox" name="has_power"> ⚡ Power Backup</label>
+        <label class="form-check"><input type="checkbox" name="has_toilets" checked> 🚻 Toilets</label>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea class="form-input" name="notes" rows="2" placeholder="Any additional info..."></textarea>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;">
+        <button type="button" onclick="document.getElementById('addShelterModal').classList.remove('open')"
+          style="background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px 20px;cursor:pointer;font-family:inherit;">
+          Cancel
+        </button>
+        <button type="submit" class="btn-primary">Add Shelter</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

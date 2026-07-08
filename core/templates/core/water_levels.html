@@ -1,0 +1,280 @@
+{% extends 'core/base.html' %}
+{% block title %}Water Levels — FloodWatch Kerala{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border-bottom: 1px solid var(--border);
+    padding: 40px 0;
+}
+.page-header h1 { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; }
+
+.wl-big-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 24px; transition: all 0.2s;
+    position: relative;
+}
+.wl-big-card:hover { border-color: var(--primary); box-shadow: 0 4px 20px rgba(14,165,233,0.1); }
+
+.big-level {
+    font-family: 'Syne', sans-serif;
+    font-size: 48px; font-weight: 800; line-height: 1;
+    transition: color 0.5s;
+}
+.gauge-wrap {
+    position: relative; width: 100%; background: rgba(14,165,233,0.1);
+    border-radius: 12px; height: 20px; overflow: hidden; margin: 12px 0;
+}
+.gauge-fill {
+    height: 100%; border-radius: 12px;
+    transition: width 1.2s ease, background 1s ease;
+    position: relative;
+}
+.gauge-fill::after {
+    content: ''; position: absolute; right: 0; top: 0;
+    width: 3px; height: 100%; background: rgba(255,255,255,0.6);
+}
+.thresholds {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: #64748b; margin-top: 4px;
+}
+
+.filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+.tab { padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--card); color: #64748b; text-decoration: none; transition: all 0.2s; }
+.tab:hover, .tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+.tab.t-CRITICAL.active, .tab.t-CRITICAL:hover { background: var(--critical); border-color: var(--critical); }
+.tab.t-DANGER.active, .tab.t-DANGER:hover { background: var(--danger); border-color: var(--danger); }
+.tab.t-WARNING.active, .tab.t-WARNING:hover { background: var(--warning); border-color: var(--warning); }
+.tab.t-WATCH.active, .tab.t-WATCH:hover { background: var(--watch); border-color: var(--watch); }
+
+.level-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+/* Live update flash */
+@keyframes flash-update {
+    0%  { box-shadow: 0 0 0 0 rgba(14,165,233,0); }
+    40% { box-shadow: 0 0 0 6px rgba(14,165,233,0.25); }
+    100%{ box-shadow: 0 0 0 0 rgba(14,165,233,0); }
+}
+.flash { animation: flash-update 0.8s ease; }
+
+/* Weather strip */
+.wx-strip {
+    background: #f8fafc; border: 1px solid #e2e8f0;
+    border-radius: 10px; padding: 10px 14px; margin-top: 10px;
+    display: flex; gap: 16px; flex-wrap: wrap;
+    font-size: 12px; align-items: center;
+}
+
+/* Live badge */
+.live-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #f0fdf4; border: 1px solid #86efac;
+    color: #15803d; padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 700;
+}
+.ldot { width:6px; height:6px; border-radius:50%; background:#22c55e; animation: blink 1.5s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <a href="/" style="color:var(--text-muted); text-decoration:none; font-size:14px;">← Dashboard</a>
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-top:12px;">
+            <div>
+                <h1>📊 Water Level Monitoring</h1>
+                <p style="color:var(--text-muted); margin-top:8px;">Live readings from all monitoring stations across Kerala</p>
+            </div>
+            <div>
+                <span class="live-badge"><span class="ldot"></span> LIVE — updates every 15s</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container page-body">
+    <div class="filter-tabs">
+        <a href="/water-levels/" class="tab {% if not status_filter %}active{% endif %}">All Stations</a>
+        <a href="?status=CRITICAL" class="tab t-CRITICAL {% if status_filter == 'CRITICAL' %}active{% endif %}">🟣 Critical</a>
+        <a href="?status=DANGER"   class="tab t-DANGER   {% if status_filter == 'DANGER'   %}active{% endif %}">🔴 Danger</a>
+        <a href="?status=WARNING"  class="tab t-WARNING  {% if status_filter == 'WARNING'  %}active{% endif %}">🟠 Warning</a>
+        <a href="?status=WATCH"    class="tab t-WATCH    {% if status_filter == 'WATCH'    %}active{% endif %}">🟡 Watch</a>
+        <a href="?status=NORMAL"   class="tab            {% if status_filter == 'NORMAL'   %}active{% endif %}">🟢 Normal</a>
+    </div>
+
+    <div style="margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+        <span style="font-size:14px; color:var(--text-muted);">
+            Showing <strong style="color:#0f172a;" id="station-count">{{ levels.count }}</strong> monitoring station{{ levels.count|pluralize }}
+        </span>
+        <span style="font-size:12px; color:#64748b;" id="last-refresh">Last updated just now</span>
+    </div>
+
+    {% if levels %}
+    <div class="level-grid" id="levels-grid">
+        {% for level in levels %}
+        {% with pct=level.get_percentage %}
+        <div class="wl-big-card" data-id="{{ level.id }}">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
+                <div>
+                    <div style="font-weight:700; font-size:16px;">{{ level.location_name }}</div>
+                    <div style="font-size:13px; color:var(--text-muted);">📍 {{ level.district }}</div>
+                </div>
+                <span class="badge badge-{{ level.status|lower }} js-badge">{{ level.status }}</span>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:8px;">
+                <div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-bottom:2px;">Current Level</div>
+                    <div class="big-level js-level" style="color:{% if level.status == 'CRITICAL' %}var(--critical){% elif level.status == 'DANGER' %}var(--danger){% elif level.status == 'WARNING' %}var(--warning){% elif level.status == 'WATCH' %}var(--watch){% else %}var(--safe){% endif %};">
+                        {{ level.current_level_meters }}<span style="font-size:22px; font-weight:400;">m</span>
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:12px; color:var(--text-muted); margin-bottom:2px;">Danger Mark</div>
+                    <div style="font-size:22px; font-weight:700; color:var(--danger);">{{ level.danger_level_meters }}m</div>
+                </div>
+            </div>
+
+            <div class="gauge-wrap">
+                <div class="gauge-fill js-gauge" style="width:{{ pct }}%;
+                    background:{% if pct >= 100 %}linear-gradient(90deg,#6d28d9,#7c3aed){% elif pct >= 85 %}linear-gradient(90deg,#b91c1c,#ef4444){% elif pct >= 60 %}linear-gradient(90deg,#c2410c,#f97316){% elif pct >= 40 %}linear-gradient(90deg,#a16207,#eab308){% else %}linear-gradient(90deg,#15803d,#22c55e){% endif %};"></div>
+            </div>
+            <div class="thresholds">
+                <span>0m</span>
+                <span>⚠️ {{ level.warning_level_meters }}m warn</span>
+                <span>🔴 {{ level.danger_level_meters }}m danger</span>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">
+                <div style="text-align:center;">
+                    <div class="js-pct" style="font-size:18px; font-weight:700; color:var(--primary);">{{ pct }}%</div>
+                    <div style="font-size:11px; color:var(--text-muted);">of Danger</div>
+                </div>
+                {% if level.notes %}
+                <div style="flex:1; margin-left:16px; font-size:12px; color:var(--text-muted); line-height:1.5;">{{ level.notes|truncatechars:80 }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Weather strip -->
+            <div class="wx-strip js-wx">
+                <span>🌧️ <strong class="js-rain">{{ level.rainfall_mm }}</strong> mm/hr</span>
+                <span>🌡️ <span class="js-temp">{{ level.temperature_c }}</span>°C</span>
+                <span>💧 <span class="js-hum">{{ level.humidity_pct }}</span>%</span>
+                <span class="js-desc" style="color:#64748b;">{{ level.weather_description }}</span>
+            </div>
+
+            <div style="font-size:11px; color:var(--text-muted); margin-top:8px; text-align:right;">
+                🕐 Updated <span class="js-ago">just now</span>
+            </div>
+        </div>
+        {% endwith %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card" style="text-align:center; padding:60px;">
+        <div style="font-size:48px; margin-bottom:16px;">📊</div>
+        <h3>No monitoring stations found</h3>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── colour helpers ──────────────────────────────────────────────────────────
+const STATUS_COLORS = {
+    CRITICAL: 'var(--critical)',
+    DANGER:   'var(--danger)',
+    WARNING:  'var(--warning)',
+    WATCH:    'var(--watch)',
+    NORMAL:   'var(--safe)',
+};
+const GAUGE_GRAD = pct =>
+    pct >= 100 ? 'linear-gradient(90deg,#6d28d9,#7c3aed)' :
+    pct >= 85  ? 'linear-gradient(90deg,#b91c1c,#ef4444)' :
+    pct >= 60  ? 'linear-gradient(90deg,#c2410c,#f97316)' :
+    pct >= 40  ? 'linear-gradient(90deg,#a16207,#eab308)' :
+                 'linear-gradient(90deg,#15803d,#22c55e)';
+
+const BADGE_CLASS = status => ({
+    CRITICAL:'badge-critical', DANGER:'badge-danger',
+    WARNING:'badge-warning',   WATCH:'badge-watch', NORMAL:'badge-normal'
+}[status] || 'badge-normal');
+
+// ── live update loop ────────────────────────────────────────────────────────
+function updateLevels() {
+    fetch('/api/water-levels/')
+        .then(r => r.json())
+        .then(data => {
+            const now = new Date();
+            document.getElementById('last-refresh').textContent =
+                'Last updated ' + now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+
+            data.levels.forEach(lv => {
+                const card = document.querySelector(`.wl-big-card[data-id="${lv.id}"]`);
+                if (!card) return;
+
+                const pct = lv.percentage;
+                const color = STATUS_COLORS[lv.status] || 'var(--safe)';
+
+                // Water level number
+                const lvEl = card.querySelector('.js-level');
+                if (lvEl) {
+                    lvEl.innerHTML = `${lv.current_level_meters}<span style="font-size:22px;font-weight:400;">m</span>`;
+                    lvEl.style.color = color;
+                }
+
+                // Gauge bar
+                const gauge = card.querySelector('.js-gauge');
+                if (gauge) {
+                    gauge.style.width = Math.min(pct, 100) + '%';
+                    gauge.style.background = GAUGE_GRAD(pct);
+                }
+
+                // % of danger
+                const pctEl = card.querySelector('.js-pct');
+                if (pctEl) { pctEl.textContent = pct + '%'; pctEl.style.color = color; }
+
+                // Badge
+                const badge = card.querySelector('.js-badge');
+                if (badge) {
+                    badge.textContent = lv.status;
+                    badge.className = 'badge ' + BADGE_CLASS(lv.status) + ' js-badge';
+                }
+
+                // Weather strip
+                const rain = card.querySelector('.js-rain');
+                if (rain) rain.textContent = lv.rainfall_mm;
+                const temp = card.querySelector('.js-temp');
+                if (temp) temp.textContent = lv.temperature_c;
+                const hum = card.querySelector('.js-hum');
+                if (hum) hum.textContent = lv.humidity_pct;
+                const desc = card.querySelector('.js-desc');
+                if (desc) desc.textContent = lv.weather_description;
+
+                // Ago
+                const ago = card.querySelector('.js-ago');
+                if (ago) ago.textContent = 'just now';
+
+                // Flash animation
+                card.classList.remove('flash');
+                void card.offsetWidth; // reflow
+                card.classList.add('flash');
+            });
+        })
+        .catch(() => {
+            // silently ignore network errors
+        });
+}
+
+// Kick off immediately, then every 15 seconds
+updateLevels();
+setInterval(updateLevels, 15000);
+</script>
+{% endblock %}

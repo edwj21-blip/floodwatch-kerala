@@ -1,0 +1,145 @@
+{% extends 'core/base.html' %}
+{% block title %}My Reports — FloodWatch Kerala{% endblock %}
+{% block content %}
+<div style="background:linear-gradient(135deg,#030d1a,#051525); border-bottom:1px solid var(--border); padding:40px 0;">
+    <div class="container">
+        <a href="/" style="color:var(--text-muted); text-decoration:none; font-size:14px;">← Dashboard</a>
+        <h1 style="font-family:'Syne',sans-serif; font-size:32px; font-weight:800; margin-top:12px;">📋 Track My Reports</h1>
+        <p style="color:var(--text-muted); margin-top:8px;">Enter your phone number to view your submitted flood reports</p>
+    </div>
+</div>
+<div class="container page-body" style="max-width:800px;">
+    <div class="card" style="margin-bottom:24px;">
+        <form method="get" style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+            <div style="flex:1; min-width:200px;">
+                <label class="form-label">Your Phone Number</label>
+                <input type="text" name="phone" value="{{ phone }}" placeholder="+91 XXXXX XXXXX" class="form-input">
+            </div>
+            <button type="submit" class="btn btn-primary">🔍 Find Reports</button>
+        </form>
+    </div>
+
+    {% if phone %}
+        {% if reports %}
+        <div style="margin-bottom:16px; font-size:14px; color:var(--text-muted);">
+            Found <strong style="color:white;">{{ reports.count }}</strong> report{{ reports.count|pluralize }} for {{ phone }}
+        </div>
+        {% for report in reports %}
+        <div class="card" style="margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
+                <div>
+                    <div style="font-weight:700; font-size:16px; margin-bottom:4px;">📍 {{ report.location }}, {{ report.district }}</div>
+                    <div style="font-size:12px; color:var(--text-muted);">Submitted {{ report.reported_at|date:"d M Y, g:i A" }} • Report #{{ report.id }}</div>
+                </div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                    <span class="badge badge-{{ report.severity|lower }}">{{ report.severity }}</span>
+                    <span class="badge badge-{{ report.status|lower }}">{{ report.status }}</span>
+                    <button onclick="fwDownloadReportPDF({{ report.id }})"
+                        style="background:#0369a1;color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">
+                        📥 PDF
+                    </button>
+                </div>
+            </div>
+            <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin-bottom:12px;">{{ report.description }}</p>
+            {% if report.photo %}
+            <img src="{{ report.photo.url }}" style="max-width:100%; max-height:200px; border-radius:10px; object-fit:cover;" alt="Report photo">
+            {% endif %}
+            {% if report.rescue_team_assigned %}
+            <div style="margin-top:14px; padding:12px; background:rgba(14,165,233,0.1); border:1px solid rgba(14,165,233,0.3); border-radius:10px; font-size:13px;">
+                🚁 <strong>Rescue team assigned:</strong> {{ report.rescue_team_assigned.name }} — 
+                <a href="tel:{{ report.rescue_team_assigned.contact_number }}" style="color:var(--primary);">{{ report.rescue_team_assigned.contact_number }}</a>
+            </div>
+            {% endif %}
+            {% if report.admin_notes %}
+            <div style="margin-top:10px; padding:12px; background:var(--bg2); border-radius:10px; font-size:13px; color:var(--text-dim);">
+                📝 Admin note: {{ report.admin_notes }}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="card" style="text-align:center; padding:50px;">
+            <div style="font-size:48px; margin-bottom:16px;">📋</div>
+            <h3>No reports found</h3>
+            <p style="color:var(--text-muted); margin:8px 0 20px;">No flood reports found for this phone number.</p>
+            <a href="/report/" class="btn btn-danger">⚠️ Submit a Report</a>
+        </div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const REPORT_DATA = {
+  {% for report in reports %}
+  {{ report.id }}: {
+    id:          {{ report.id }},
+    location:    "{{ report.location|escapejs }}, {{ report.district|escapejs }}",
+    submitted:   "{{ report.reported_at|date:'d M Y, g:i A' }}",
+    severity:    "{{ report.severity }}",
+    status:      "{{ report.status }}",
+    description: "{{ report.description|escapejs }}",
+    water_level: "{{ report.water_level_estimate|default:'N/A'|escapejs }}",
+    people:      "{{ report.people_affected }}",
+    evacuation:  "{{ report.evacuation_needed|yesno:'Yes,No' }}",
+    team:        "{% if report.rescue_team_assigned %}{{ report.rescue_team_assigned.name|escapejs }}{% else %}Not assigned{% endif %}",
+    admin_notes: "{{ report.admin_notes|escapejs }}",
+    phone:       "{{ report.reporter_phone|escapejs }}",
+    name:        "{{ report.reporter_name|escapejs }}",
+  },
+  {% endfor %}
+};
+
+function fwDownloadReportPDF(id) {
+  const r = REPORT_DATA[id];
+  if (!r) return;
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>FloodWatch Report #${r.id}</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 700px; margin: 40px auto; color: #0f172a; font-size: 14px; }
+    .header { background: #0369a1; color: #fff; padding: 24px 28px; border-radius: 10px 10px 0 0; }
+    .header h1 { margin: 0; font-size: 22px; }
+    .header p  { margin: 4px 0 0; font-size: 13px; opacity: 0.85; }
+    .body { border: 1px solid #e2e8f0; border-top: none; padding: 24px 28px; border-radius: 0 0 10px 10px; }
+    .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
+    .row:last-child { border-bottom: none; }
+    .lbl { color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .val { font-weight: 600; text-align: right; max-width: 60%; }
+    .desc { margin-top: 16px; padding: 14px; background: #f8fafc; border-radius: 8px; line-height: 1.6; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 12px; font-weight: 700; }
+    .CRITICAL,.CATASTROPHIC,.EXTREME { background:#f3e8ff; color:#7c3aed; }
+    .DANGER,.SEVERE { background:#fef2f2; color:#dc2626; }
+    .WARNING,.MODERATE { background:#fffbeb; color:#d97706; }
+    .NORMAL,.MINOR,.WATCH { background:#f0fdf4; color:#16a34a; }
+    .PENDING { background:#fef9c3; color:#854d0e; }
+    .VERIFIED,.RESOLVED { background:#f0fdf4; color:#15803d; }
+    .REJECTED { background:#fef2f2; color:#dc2626; }
+    footer { margin-top: 24px; text-align: center; font-size: 11px; color: #94a3b8; }
+  </style></head><body>
+  <div class="header">
+    <h1>🌊 FloodWatch Kerala — Flood Report</h1>
+    <p>Report #${r.id} &nbsp;|&nbsp; ${r.submitted}</p>
+  </div>
+  <div class="body">
+    <div class="row"><span class="lbl">Reporter</span><span class="val">${r.name}</span></div>
+    <div class="row"><span class="lbl">Phone</span><span class="val">${r.phone}</span></div>
+    <div class="row"><span class="lbl">Location</span><span class="val">${r.location}</span></div>
+    <div class="row"><span class="lbl">Severity</span><span class="val"><span class="badge ${r.severity}">${r.severity}</span></span></div>
+    <div class="row"><span class="lbl">Status</span><span class="val"><span class="badge ${r.status}">${r.status}</span></span></div>
+    <div class="row"><span class="lbl">Est. Water Level</span><span class="val">${r.water_level}</span></div>
+    <div class="row"><span class="lbl">People Affected</span><span class="val">${r.people}</span></div>
+    <div class="row"><span class="lbl">Evacuation Needed</span><span class="val">${r.evacuation}</span></div>
+    <div class="row"><span class="lbl">Rescue Team</span><span class="val">${r.team}</span></div>
+    ${r.admin_notes ? `<div class="row"><span class="lbl">Admin Notes</span><span class="val" style="max-width:70%">${r.admin_notes}</span></div>` : ''}
+    <div class="desc"><strong>Description:</strong><br>${r.description}</div>
+  </div>
+  <footer>Generated by FloodWatch Kerala SDMA Portal &nbsp;|&nbsp; ${new Date().toLocaleString('en-IN')} &nbsp;|&nbsp; Emergency: 1077</footer>
+  </body></html>`;
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  win.addEventListener('load', () => win.print());
+}
+</script>
+{% endblock %}

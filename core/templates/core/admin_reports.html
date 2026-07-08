@@ -1,0 +1,366 @@
+{% extends 'core/base.html' %}
+{% block title %}Manage Reports — FloodWatch Admin{% endblock %}
+{% block extra_css %}
+<style>
+.report-row {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px;
+    transition: all 0.2s; margin-bottom: 14px;
+}
+.report-row:hover { border-color: var(--border2); }
+.report-row.pending { border-left: 3px solid var(--watch); }
+.report-row.verified { border-left: 3px solid var(--primary); }
+.report-row.resolved { border-left: 3px solid var(--safe); }
+.report-row.rejected { border-left: 3px solid var(--text-muted); }
+.report-row.catastrophic { border-left: 3px solid var(--critical) !important; }
+.filter-bar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:24px; align-items:center; }
+.filter-sel { background:var(--card); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:8px 12px; font-family:inherit; font-size:13px; }
+.action-form { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.photo-thumb { width:64px; height:64px; object-fit:cover; border-radius:8px; border:1px solid var(--border); cursor:pointer; }
+.stats-bar { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px; margin-bottom:28px; }
+.mini-stat { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px 16px; text-align:center; }
+.mini-stat-num { font-family:'Syne',sans-serif; font-size:24px; font-weight:800; }
+.mini-stat-label { font-size:11px; color:var(--text-muted); margin-top:2px; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+            <div>
+                <a href="/" style="color:var(--text-muted); text-decoration:none; font-size:13px;">← Dashboard</a>
+                <h1 style="margin-top:8px;">🛡️ Admin — Manage Flood Reports</h1>
+                <p style="color:var(--text-muted); font-size:14px; margin-top:4px;">Review, verify and take action on submitted flood reports</p>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                <span id="wl-live-badge" style="display:inline-flex; align-items:center; gap:5px; background:#f0fdf4; border:1px solid #86efac; color:#15803d; padding:4px 12px; border-radius:20px; font-size:11px; font-weight:700;">
+                    <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;display:inline-block;animation:blink 1.5s infinite;"></span> LIVE — auto-updating
+                </span>
+                <!-- Feature 6: WhatsApp One-Click Broadcast -->
+                <button class="btn btn-success btn-sm" onclick="fwAdminWhatsApp()" id="wa-broadcast-btn" title="Open WhatsApp with pre-built alert message for all districts">
+                    📱 WhatsApp Broadcast
+                </button>
+                <!-- Feature 5: Auto Email to all users -->
+                <button class="btn btn-warning btn-sm" onclick="fwAdminSendEmails()" id="email-alert-btn" title="Send flood alert email to all registered users">
+                    📧 Email All Users
+                </button>
+                <a href="/admin/core/floodreport/" class="btn btn-ghost btn-sm">⚙️ Django Admin</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container page-body">
+
+    <!-- Water Level Overview (Admin) -->
+    {% if water_overview %}
+    <div class="card" style="margin-bottom:28px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+            <div class="section-title">🌊 Live Water Level & Rainfall Overview</div>
+            <span id="admin-wl-refresh" style="font-size:11px; color:var(--text-muted);">🔄 Live — updates every 15s</span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px;">
+        {% for wl in water_overview %}
+        <div class="wl-admin-card" data-wlid="{{ wl.id }}" style="background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:14px;
+                    border-left:4px solid {% if wl.status == 'CRITICAL' %}#7c3aed{% elif wl.status == 'DANGER' %}#dc2626{% elif wl.status == 'WARNING' %}#ea580c{% elif wl.status == 'WATCH' %}#ca8a04{% else %}#16a34a{% endif %};">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                <div>
+                    <div style="font-weight:700; font-size:13px;">{{ wl.location_name }}</div>
+                    <div style="font-size:11px; color:var(--text-muted);">{{ wl.district }}</div>
+                </div>
+                <span class="badge badge-{{ wl.status|lower }} wl-badge">{{ wl.status }}</span>
+            </div>
+            <div style="display:flex; gap:16px; font-size:12px; margin-bottom:8px;">
+                <div><span style="color:var(--text-muted);">Level:</span> <strong class="wl-lvl">{{ wl.current_level_meters }}m</strong></div>
+                <div><span style="color:var(--text-muted);">Danger:</span> {{ wl.danger_level_meters }}m</div>
+            </div>
+            <div class="level-bar-wrap" style="margin-bottom:8px;">
+                <div class="level-bar-fill" style="width:{{ wl.get_percentage }}%;
+                    background:{% if wl.status == 'CRITICAL' %}#7c3aed{% elif wl.status == 'DANGER' %}#dc2626{% elif wl.status == 'WARNING' %}#ea580c{% elif wl.status == 'WATCH' %}#ca8a04{% else %}#16a34a{% endif %};"></div>
+            </div>
+            <div style="font-size:11px; color:var(--text-muted); display:flex; gap:10px; flex-wrap:wrap;">
+                <span>🌧️ <span class="wl-rain">{{ wl.rainfall_mm }}</span> mm/hr</span>
+                <span>💧 <span class="wl-hum">{{ wl.humidity_pct }}</span>%</span>
+                <span class="wl-desc">{% if wl.weather_description %}☁️ {{ wl.weather_description }}{% endif %}</span>
+            </div>
+        </div>
+        {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Stats -->
+    <div class="stats-bar">
+        <div class="mini-stat">
+            <div class="mini-stat-num" style="color:var(--watch);">{{ stats.pending }}</div>
+            <div class="mini-stat-label">⏳ Pending</div>
+        </div>
+        <div class="mini-stat">
+            <div class="mini-stat-num" style="color:var(--primary);">{{ stats.verified }}</div>
+            <div class="mini-stat-label">✅ Verified</div>
+        </div>
+        <div class="mini-stat">
+            <div class="mini-stat-num" style="color:var(--safe);">{{ stats.resolved }}</div>
+            <div class="mini-stat-label">🎉 Resolved</div>
+        </div>
+        <div class="mini-stat">
+            <div class="mini-stat-num" style="color:var(--text-muted);">{{ stats.rejected }}</div>
+            <div class="mini-stat-label">❌ Rejected</div>
+        </div>
+        <div class="mini-stat">
+            <div class="mini-stat-num" style="color:var(--danger);">{{ stats.evacuation }}</div>
+            <div class="mini-stat-label">🚨 Need Evacuation</div>
+        </div>
+        <div class="mini-stat">
+            <div class="mini-stat-num">{{ stats.total }}</div>
+            <div class="mini-stat-label">📋 Total Reports</div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <form method="get" class="filter-bar">
+        <select name="status" class="filter-sel" onchange="this.form.submit()">
+            <option value="">All Status</option>
+            <option value="PENDING" {% if filter_status == 'PENDING' %}selected{% endif %}>⏳ Pending</option>
+            <option value="VERIFIED" {% if filter_status == 'VERIFIED' %}selected{% endif %}>✅ Verified</option>
+            <option value="RESOLVED" {% if filter_status == 'RESOLVED' %}selected{% endif %}>🎉 Resolved</option>
+            <option value="REJECTED" {% if filter_status == 'REJECTED' %}selected{% endif %}>❌ Rejected</option>
+        </select>
+        <select name="district" class="filter-sel" onchange="this.form.submit()">
+            <option value="">All Districts</option>
+            {% for d in districts %}
+            <option value="{{ d }}" {% if filter_district == d %}selected{% endif %}>{{ d }}</option>
+            {% endfor %}
+        </select>
+        <select name="severity" class="filter-sel" onchange="this.form.submit()">
+            <option value="">All Severity</option>
+            <option value="MINOR" {% if filter_severity == 'MINOR' %}selected{% endif %}>🟢 Minor</option>
+            <option value="MODERATE" {% if filter_severity == 'MODERATE' %}selected{% endif %}>🟡 Moderate</option>
+            <option value="SEVERE" {% if filter_severity == 'SEVERE' %}selected{% endif %}>🔴 Severe</option>
+            <option value="CATASTROPHIC" {% if filter_severity == 'CATASTROPHIC' %}selected{% endif %}>🟣 Catastrophic</option>
+        </select>
+        <select name="evacuation" class="filter-sel" onchange="this.form.submit()">
+            <option value="">Any Evacuation</option>
+            <option value="yes" {% if filter_evacuation == 'yes' %}selected{% endif %}>🚨 Needs Evacuation</option>
+        </select>
+        <span style="font-size:13px; color:var(--text-muted); align-self:center;">{{ reports|length }} report(s)</span>
+        {% if filter_status or filter_district or filter_severity or filter_evacuation %}
+        <a href="/admin-reports/" class="btn btn-ghost btn-sm">✕ Clear</a>
+        {% endif %}
+    </form>
+
+    <!-- Feature 7: District PDF Downloads -->
+    <div class="card" style="margin-bottom:24px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+            <div class="section-title">📥 Download District Reports (PDF)</div>
+            <span style="font-size:12px; color:var(--text-muted);">Water levels • Alerts • Reports • Rescue teams — all in one PDF</span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:10px;">
+            {% for district in districts %}
+            <a href="/admin/district-pdf/{{ district|urlencode }}/"
+               target="_blank"
+               style="display:flex; align-items:center; gap:8px; padding:10px 13px;
+                      background:var(--bg3); border:1px solid var(--border); border-radius:10px;
+                      text-decoration:none; color:var(--text); font-size:13px; font-weight:500;
+                      transition:all 0.18s;"
+               onmouseover="this.style.borderColor='var(--primary)';this.style.background='var(--primary-bg)';"
+               onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--bg3)';">
+                📄 {{ district }}
+            </a>
+            {% empty %}
+            <p style="color:var(--text-muted); font-size:13px;">No districts found. Add flood reports to see districts here.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Reports List -->
+    {% if reports %}
+    {% for report in reports %}
+    <div class="report-row {{ report.status|lower }} {% if report.severity == 'CATASTROPHIC' %}catastrophic{% endif %}">
+        <div style="display:flex; gap:16px; flex-wrap:wrap;">
+            {% if report.photo %}
+            <img src="{{ report.photo.url }}" class="photo-thumb" onclick="window.open('{{ report.photo.url }}','_blank')" title="Click to view full image">
+            {% else %}
+            <div style="width:64px; height:64px; border-radius:8px; background:var(--bg2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0;">📷</div>
+            {% endif %}
+
+            <div style="flex:1; min-width:0;">
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
+                    <span class="badge badge-{{ report.severity|lower }}">{{ report.severity }}</span>
+                    <span class="badge badge-{{ report.status|lower }}">{{ report.status }}</span>
+                    {% if report.evacuation_needed %}<span class="badge" style="background:rgba(248,113,113,0.15); color:var(--danger); border:1px solid rgba(248,113,113,0.3);">🚨 EVACUATION NEEDED</span>{% endif %}
+                    <span style="font-size:12px; color:var(--text-muted);">Report #{{ report.id }}</span>
+                </div>
+
+                <div style="font-weight:700; font-size:15px; margin-bottom:4px;">{{ report.reporter_name }}</div>
+                <div style="font-size:13px; color:var(--text-dim); margin-bottom:4px;">
+                    📍 {{ report.location }}, {{ report.district }}
+                    {% if report.water_level_estimate %} • 💧 {{ report.water_level_estimate }}{% endif %}
+                    {% if report.people_affected > 0 %} • 👥 {{ report.people_affected }} affected{% endif %}
+                </div>
+                <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px; line-height:1.5;">{{ report.description|truncatewords:30 }}</div>
+                <div style="display:flex; gap:12px; font-size:12px; color:var(--text-muted); flex-wrap:wrap;">
+                    <span>📞 <a href="tel:{{ report.reporter_phone }}" style="color:var(--primary); text-decoration:none;">{{ report.reporter_phone }}</a></span>
+                    {% if report.reporter_email %}<span>✉️ {{ report.reporter_email }}</span>{% endif %}
+                    <span>🕐 {{ report.reported_at|date:"d M Y, h:i A" }}</span>
+                    {% if report.rescue_team_assigned %}<span>🚁 Team: {{ report.rescue_team_assigned.name }}</span>{% endif %}
+                </div>
+                {% if report.admin_notes %}
+                <div style="margin-top:10px; background:var(--bg2); border-radius:8px; padding:10px 14px; font-size:13px; color:var(--text-dim); border-left:3px solid var(--primary);">
+                    📝 <strong>Admin Note:</strong> {{ report.admin_notes }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Action Form -->
+        <div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
+            <form method="post" action="/admin-reports/action/{{ report.id }}/" class="action-form">
+                {% csrf_token %}
+                <select name="status" class="filter-sel">
+                    <option value="PENDING" {% if report.status == 'PENDING' %}selected{% endif %}>⏳ Pending</option>
+                    <option value="VERIFIED" {% if report.status == 'VERIFIED' %}selected{% endif %}>✅ Verified</option>
+                    <option value="RESOLVED" {% if report.status == 'RESOLVED' %}selected{% endif %}>🎉 Resolved</option>
+                    <option value="REJECTED" {% if report.status == 'REJECTED' %}selected{% endif %}>❌ Rejected</option>
+                </select>
+                <select name="rescue_team" class="filter-sel">
+                    <option value="">-- Assign Rescue Team --</option>
+                    {% for team in rescue_teams %}
+                    <option value="{{ team.id }}" {% if report.rescue_team_assigned_id == team.id %}selected{% endif %}>
+                        {{ team.name }} ({{ team.district }}) {% if not team.is_available %}[DEPLOYED]{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+                <input type="text" name="admin_notes" placeholder="Admin notes..." value="{{ report.admin_notes }}"
+                       style="flex:1; min-width:200px; background:var(--bg2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:8px 12px; font-family:inherit; font-size:13px; outline:none;">
+                <button type="submit" class="btn btn-primary btn-sm">💾 Update</button>
+                {% if report.status == 'PENDING' %}
+                <button type="submit" name="quick_action" value="verify" class="btn btn-success btn-sm">✅ Verify</button>
+                <button type="submit" name="quick_action" value="reject" class="btn btn-ghost btn-sm">❌ Reject</button>
+                {% endif %}\n                {% if report.status == 'VERIFIED' %}\n                <button type="submit" name="quick_action" value="resolve" class="btn btn-success btn-sm">🎉 Mark Resolved</button>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <div class="card" style="text-align:center; padding:60px;">
+        <div style="font-size:48px; margin-bottom:16px;">📋</div>
+        <h3>No reports found</h3>
+        <p style="color:var(--text-muted); margin-top:8px;">Try adjusting your filters above</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+{% block extra_js %}
+<style>
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+</style>
+<script>
+// ── Live water-level update for admin overview (no sync button) ──────────────
+const BADGE_CLASS = s => ({
+    CRITICAL:'badge-critical', DANGER:'badge-danger',
+    WARNING:'badge-warning',   WATCH:'badge-watch', NORMAL:'badge-normal'
+}[s] || 'badge-normal');
+
+const BAR_COLOR = s => ({
+    CRITICAL:'#7c3aed', DANGER:'#dc2626', WARNING:'#ea580c', WATCH:'#ca8a04'
+}[s] || '#16a34a');
+
+const BORDER_COLOR = s => ({
+    CRITICAL:'#7c3aed', DANGER:'#dc2626', WARNING:'#ea580c', WATCH:'#ca8a04'
+}[s] || '#16a34a');
+
+function refreshAdminWater() {
+    fetch('/api/water-levels/')
+        .then(r => r.json())
+        .then(data => {
+            const now = new Date();
+            const ref = document.getElementById('admin-wl-refresh');
+            if (ref) ref.textContent = '🔄 Updated ' + now.toLocaleTimeString('en-IN');
+
+            data.levels.forEach(lv => {
+                const card = document.querySelector(`.wl-admin-card[data-wlid="${lv.id}"]`);
+                if (!card) return;
+
+                // Update border colour
+                card.style.borderLeftColor = BORDER_COLOR(lv.status);
+
+                // Badge
+                const badge = card.querySelector('.wl-badge');
+                if (badge) { badge.textContent = lv.status; badge.className = 'badge ' + BADGE_CLASS(lv.status) + ' wl-badge'; }
+
+                // Level
+                const lvEl = card.querySelector('.wl-lvl');
+                if (lvEl) lvEl.textContent = lv.current_level_meters + 'm';
+
+                // Progress bar
+                const bar = card.querySelector('.level-bar-fill');
+                if (bar) { bar.style.width = Math.min(lv.percentage, 100) + '%'; bar.style.background = BAR_COLOR(lv.status); }
+
+                // Rainfall & weather
+                const rain = card.querySelector('.wl-rain');
+                if (rain) rain.textContent = lv.rainfall_mm;
+                const hum = card.querySelector('.wl-hum');
+                if (hum) hum.textContent = lv.humidity_pct;
+                const desc = card.querySelector('.wl-desc');
+                if (desc) desc.textContent = lv.weather_description ? '☁️ ' + lv.weather_description : '';
+            });
+        })
+        .catch(() => {});
+}
+
+refreshAdminWater();
+setInterval(refreshAdminWater, 15000);
+
+/* ── Feature 6: Admin WhatsApp One-Click Broadcast ── */
+window.fwAdminWhatsApp = async function() {
+  const btn = document.getElementById('wa-broadcast-btn');
+  btn.textContent = '⏳ Loading...';
+  btn.disabled = true;
+  try {
+    const res  = await fetch('/admin/whatsapp-broadcast/');
+    const data = await res.json();
+    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+    const url = isMobile
+      ? `whatsapp://send?text=${encodeURIComponent(data.message)}`
+      : `https://web.whatsapp.com/send?text=${encodeURIComponent(data.message)}`;
+    window.open(url, '_blank');
+    btn.textContent = '✅ WhatsApp Opened';
+    setTimeout(() => { btn.textContent = '📱 WhatsApp Broadcast'; btn.disabled = false; }, 3000);
+  } catch(e) {
+    btn.textContent = '❌ Error';
+    setTimeout(() => { btn.textContent = '📱 WhatsApp Broadcast'; btn.disabled = false; }, 2000);
+  }
+};
+
+/* ── Feature 5: Auto Email Alerts ── */
+window.fwAdminSendEmails = async function() {
+  const btn = document.getElementById('email-alert-btn');
+  if (!confirm('Send flood alert emails to ALL registered users with email addresses?')) return;
+  btn.textContent = '⏳ Sending...';
+  btn.disabled = true;
+  try {
+    const res  = await fetch('/admin/send-email-alerts/', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '' }
+    });
+    const data = await res.json();
+    if (data.success) {
+      btn.textContent = `✅ Sent to ${data.count} users`;
+      alert(`✅ Email alerts sent successfully!\n${data.message}`);
+    } else {
+      btn.textContent = '⚠️ ' + data.message;
+      alert('⚠️ ' + data.message);
+    }
+    setTimeout(() => { btn.textContent = '📧 Email All Users'; btn.disabled = false; }, 4000);
+  } catch(e) {
+    btn.textContent = '❌ Error';
+    alert('❌ Failed to send emails. Check server logs and email settings in settings.py');
+    setTimeout(() => { btn.textContent = '📧 Email All Users'; btn.disabled = false; }, 2000);
+  }
+};
+</script>
+{% endblock %}

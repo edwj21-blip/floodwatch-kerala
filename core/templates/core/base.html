@@ -1,0 +1,946 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}FloodWatch Kerala{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0369a1;
+            --primary-light: #0ea5e9;
+            --primary-bg: #e0f2fe;
+            --danger: #dc2626;
+            --danger-light: #fef2f2;
+            --warning: #d97706;
+            --warning-light: #fffbeb;
+            --watch: #ca8a04;
+            --safe: #16a34a;
+            --safe-light: #f0fdf4;
+            --critical: #7c3aed;
+            --bg: #f1f5f9;
+            --bg2: #ffffff;
+            --bg3: #f8fafc;
+            --card: #ffffff;
+            --card2: #f8fafc;
+            --border: #e2e8f0;
+            --border2: #cbd5e1;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --text-dim: #475569;
+            --sidebar-bg: #0f172a;
+            --sidebar-text: #cbd5e1;
+            --sidebar-active: #0ea5e9;
+            --sidebar-hover: rgba(255,255,255,0.07);
+            --topbar: #ffffff;
+            --sidebar-width: 240px;
+        }
+        html[data-theme="dark"] {
+            --bg: #0a0f1a;
+            --bg2: #111827;
+            --bg3: #1e293b;
+            --card: #1e293b;
+            --card2: #162032;
+            --border: #334155;
+            --border2: #475569;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --text-dim: #cbd5e1;
+            --topbar: #111827;
+        }
+        #fw-theme-toggle {
+            background: none; border: 1px solid var(--border2);
+            color: var(--text); border-radius: 20px;
+            padding: 4px 12px; font-size: 13px; cursor: pointer;
+            transition: all 0.2s; margin-right: 8px; font-family: inherit;
+        }
+        #fw-theme-toggle:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            height: 100vh;
+            position: fixed;
+            top: 0; left: 0;
+            display: flex;
+            flex-direction: column;
+            z-index: 200;
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .sidebar-brand {
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            display: flex; align-items: center; gap: 10px;
+            text-decoration: none; flex-shrink: 0;
+        }
+        .sidebar-logo {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--primary-light), #6366f1);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; flex-shrink: 0;
+        }
+        .sidebar-brand-text {
+            font-family: 'Syne', sans-serif;
+            font-size: 18px; font-weight: 800;
+            color: white; letter-spacing: -0.5px; line-height: 1.1;
+        }
+        .sidebar-brand-text span { color: var(--primary-light); }
+        .sidebar-brand-sub { font-size: 10px; color: #64748b; font-weight: 500; margin-top: 1px; }
+        .sidebar-section { padding: 16px 12px 8px; }
+        .sidebar-section-label {
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1px; color: #475569; padding: 0 8px; margin-bottom: 6px;
+        }
+        .sidebar-nav { list-style: none; }
+        .sidebar-nav a {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 10px; border-radius: 9px;
+            color: var(--sidebar-text); text-decoration: none;
+            font-size: 13.5px; font-weight: 500; transition: all 0.18s;
+            white-space: nowrap; margin-bottom: 2px;
+        }
+        .sidebar-nav a:hover { background: var(--sidebar-hover); color: white; }
+        .sidebar-nav a.active { background: rgba(14,165,233,0.18); color: var(--sidebar-active); font-weight: 600; }
+        .sidebar-nav a .nav-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+        .sidebar-badge {
+            margin-left: auto; background: var(--danger); color: white;
+            font-size: 10px; padding: 1px 7px; border-radius: 10px; font-weight: 700;
+        }
+        .sidebar-report-link {
+            background: rgba(220,38,38,0.12) !important;
+            color: #f87171 !important;
+            border: 1px solid rgba(220,38,38,0.2) !important;
+        }
+        .sidebar-report-link:hover { background: rgba(220,38,38,0.25) !important; color: white !important; }
+        .sidebar-footer {
+            margin-top: auto; padding: 16px 12px;
+            border-top: 1px solid rgba(255,255,255,0.08); flex-shrink: 0;
+        }
+        .sidebar-user {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px; background: rgba(255,255,255,0.05);
+            border-radius: 10px; margin-bottom: 10px;
+        }
+        .sidebar-avatar {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-light), #6366f1);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 800; color: white; flex-shrink: 0;
+        }
+        .sidebar-username { font-size: 13px; font-weight: 600; color: white; }
+        .sidebar-role { font-size: 10px; color: #64748b; }
+        .sidebar-logout {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 10px; border-radius: 8px;
+            color: #94a3b8; text-decoration: none;
+            font-size: 13px; font-weight: 500; transition: all 0.18s;
+        }
+        .sidebar-logout:hover { background: rgba(255,255,255,0.07); color: #f87171; }
+        .sidebar-live {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 11px; color: #4ade80; font-weight: 600; padding: 6px 10px;
+        }
+        .live-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: #4ade80; animation: pulse-green 2s infinite;
+        }
+        @keyframes pulse-green {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .main-wrap {
+            margin-left: var(--sidebar-width);
+            flex: 1; display: flex; flex-direction: column; min-height: 100vh;
+        }
+        .topbar {
+            background: var(--topbar);
+            border-bottom: 1px solid var(--border);
+            padding: 0 28px; height: 56px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .topbar-left { display: flex; align-items: center; gap: 16px; }
+        .topbar-right { display: flex; align-items: center; gap: 12px; }
+        .topbar-clock { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+        .topbar-emergency {
+            display: flex; align-items: center; gap: 6px;
+            background: var(--danger-light); border: 1px solid #fecaca;
+            padding: 4px 12px; border-radius: 20px;
+            font-size: 12px; font-weight: 700; color: var(--danger);
+            text-decoration: none;
+        }
+        .topbar-emergency:hover { background: #fee2e2; }
+        .hamburger { display: none; background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text); padding: 4px; }
+        .page-content { flex: 1; padding: 0; }
+
+        /* ===== MESSAGES ===== */
+        .django-messages { position: fixed; top: 68px; right: 20px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
+        .msg {
+            padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 500;
+            max-width: 400px; border: 1px solid; animation: slideIn 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .msg-success { background: #f0fdf4; border-color: #86efac; color: #15803d; }
+        .msg-error { background: #fef2f2; border-color: #fca5a5; color: #dc2626; }
+        .msg-info { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
+        .msg-warning { background: #fffbeb; border-color: #fde68a; color: #d97706; }
+
+        /* ===== LAYOUT ===== */
+        .container { max-width: 1280px; margin: 0 auto; padding: 0 28px; }
+        .page-body { padding: 28px 0 60px; }
+
+        /* ===== CARDS ===== */
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+        .card-sm { padding: 16px; border-radius: 12px; }
+
+        /* ===== BADGES ===== */
+        .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .badge-normal { background: #f0fdf4; color: #16a34a; border: 1px solid #86efac; }
+        .badge-watch { background: #fffbeb; color: #ca8a04; border: 1px solid #fde68a; }
+        .badge-warning { background: #fff7ed; color: #ea580c; border: 1px solid #fdba74; }
+        .badge-danger { background: #fef2f2; border: 1px solid #fca5a5; color: #dc2626; }
+        .badge-critical { background: #faf5ff; color: #7c3aed; border: 1px solid #c4b5fd; }
+        .badge-low { background: #f0fdf4; color: #16a34a; border: 1px solid #86efac; }
+        .badge-medium { background: #fffbeb; color: #ca8a04; border: 1px solid #fde68a; }
+        .badge-high { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }
+        .badge-extreme { background: #faf5ff; color: #7c3aed; border: 1px solid #c4b5fd; }
+        .badge-pending { background: #fffbeb; color: #ca8a04; border: 1px solid #fde68a; }
+        .badge-verified { background: #eff6ff; color: #1d4ed8; border: 1px solid #93c5fd; }
+        .badge-resolved { background: #f0fdf4; color: #16a34a; border: 1px solid #86efac; }
+        .badge-rejected { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
+
+        /* ===== WATER LEVEL BAR ===== */
+        .level-bar-wrap { background: #e2e8f0; border-radius: 8px; height: 10px; overflow: hidden; }
+        .level-bar-fill { height: 100%; border-radius: 8px; transition: width 1s ease; }
+
+        /* ===== FOOTER ===== */
+        .footer { border-top: 1px solid var(--border); padding: 20px 0; background: white; text-align: center; }
+        .footer-text { color: var(--text-muted); font-size: 13px; }
+        .footer-text strong { color: var(--primary); }
+
+        /* ===== FORMS ===== */
+        .form-input {
+            width: 100%; background: white; border: 1px solid var(--border2);
+            color: var(--text); border-radius: 10px; padding: 11px 14px;
+            font-family: inherit; font-size: 14px;
+            transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+        }
+        .form-input:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(14,165,233,0.15); }
+        .form-input::placeholder { color: #94a3b8; }
+        select.form-input option { background: white; color: var(--text); }
+        .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-dim); margin-bottom: 6px; }
+        .form-group { margin-bottom: 18px; }
+        .form-error { color: var(--danger); font-size: 12px; margin-top: 4px; }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 10px 20px; border-radius: 10px;
+            font-family: inherit; font-size: 14px; font-weight: 600;
+            cursor: pointer; border: none; text-decoration: none; transition: all 0.2s;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #075985; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(3,105,161,0.3); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-success { background: var(--safe); color: white; }
+        .btn-success:hover { background: #15803d; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-warning:hover { background: #b45309; }
+        .btn-ghost { background: white; color: var(--text-dim); border: 1px solid var(--border2); }
+        .btn-ghost:hover { color: var(--primary); border-color: var(--primary-light); background: var(--primary-bg); }
+        .btn-lg { padding: 13px 28px; font-size: 15px; border-radius: 12px; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 7px; }
+
+        /* ===== GRID ===== */
+        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+
+        /* ===== STAT CARD ===== */
+        .stat-card {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 16px; padding: 20px 24px;
+            display: flex; align-items: center; gap: 16px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        .stat-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+        .stat-num { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; color: var(--text); }
+        .stat-label { font-size: 13px; color: var(--text-muted); }
+
+        /* ===== SECTION HEADER ===== */
+        .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .section-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: var(--text); }
+        .section-title span { color: var(--primary); }
+
+        /* ===== PAGE HEADER ===== */
+        .page-header { background: white; border-bottom: 1px solid var(--border); padding: 28px 0; }
+        .page-header h1 { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; color: var(--text); }
+
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+        /* ===== MOBILE ===== */
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 199; }
+        @media (max-width: 900px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .sidebar-overlay.open { display: block; }
+            .main-wrap { margin-left: 0; }
+            .hamburger { display: block; }
+            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+            .topbar-clock { display: none; }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar" id="sidebar">
+    <a href="/" class="sidebar-brand">
+        <div class="sidebar-logo">🌊</div>
+        <div>
+            <div class="sidebar-brand-text">Flood<span>Watch</span></div>
+            <div class="sidebar-brand-sub">Kerala SDMA Portal</div>
+        </div>
+    </a>
+
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Main Menu</div>
+        <ul class="sidebar-nav">
+            <li><a href="/" class="{% if page == 'home' %}active{% endif %}"><span class="nav-icon">🏠</span> Dashboard</a></li>
+            <li>
+                <a href="/alerts/" class="{% if page == 'alerts' %}active{% endif %}">
+                    <span class="nav-icon">🚨</span> Flood Alerts
+                    {% if active_alert_count %}<span class="sidebar-badge">{{ active_alert_count }}</span>{% endif %}
+                </a>
+            </li>
+            <li><a href="/water-levels/" class="{% if page == 'water_levels' %}active{% endif %}"><span class="nav-icon">📊</span> Water Levels</a></li>
+            <li><a href="/rescue-teams/" class="{% if page == 'rescue' %}active{% endif %}"><span class="nav-icon">🚁</span> Rescue Teams</a></li>
+            <li><a href="/shelters/" class="{% if page == 'shelters' %}active{% endif %}"><span class="nav-icon">🏠</span> Shelters</a></li>
+            <li><a href="/flood-map/" class="{% if page == 'flood_map' %}active{% endif %}"><span class="nav-icon">🗺️</span> District Map</a></li>
+            <li><a href="/control-rooms/" class="{% if page == 'control_rooms' %}active{% endif %}"><span class="nav-icon">📡</span> Control Rooms</a></li>
+        </ul>
+    </div>
+
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Reports</div>
+        <ul class="sidebar-nav">
+            <li><a href="/my-reports/" class="{% if page == 'my_reports' %}active{% endif %}"><span class="nav-icon">📋</span> My Reports</a></li>
+            {% if user.is_staff %}
+            <li><a href="/admin-reports/" class="{% if page == 'admin_reports' %}active{% endif %}" style="color: #fbbf24;"><span class="nav-icon">🛡️</span> Manage Reports</a></li>
+            {% endif %}
+            <li><a href="/report/" class="sidebar-report-link {% if page == 'report' %}active{% endif %}"><span class="nav-icon">⚠️</span> Report a Flood</a></li>
+        </ul>
+    </div>
+
+    <div class="sidebar-footer">
+        <div class="sidebar-live">
+            <div class="live-dot"></div> LIVE MONITORING
+        </div>
+        {% if user.is_authenticated %}
+        <div class="sidebar-user">
+            <div class="sidebar-avatar">{{ user.username|first|upper }}</div>
+            <div>
+                <div class="sidebar-username">{{ user.username }}</div>
+                <div class="sidebar-role">{% if user.is_staff %}Administrator{% else %}Public User{% endif %}</div>
+            </div>
+        </div>
+        {% if user.is_staff %}
+        <a href="/admin/" class="sidebar-logout" style="color: #fbbf24; margin-bottom:4px;">⚙️ Django Admin Panel</a>
+        {% endif %}
+        <a href="/logout/" class="sidebar-logout">🚪 Logout</a>
+        {% else %}
+        <a href="/portal/" class="sidebar-logout" style="color: var(--sidebar-active);">🔐 Login / Register</a>
+        {% endif %}
+    </div>
+</aside>
+
+<!-- ===== MAIN WRAP ===== -->
+<div class="main-wrap">
+    <div class="topbar">
+        <div class="topbar-left">
+            <button class="hamburger" onclick="toggleSidebar()">☰</button>
+            <span class="topbar-clock" id="topbar-clock">⏰ Loading...</span>
+        </div>
+        <div class="topbar-right">
+            <button id="fw-theme-toggle" onclick="fwToggleTheme()" title="Toggle dark/light mode">🌙 Dark</button>
+            <a id="fw-whatsapp-share" href="#" onclick="fwShareWhatsApp(event)"
+               style="background:#25d366;color:#fff;border-radius:20px;padding:4px 12px;font-size:13px;text-decoration:none;font-weight:600;">
+               📱 Share Alert
+            </a>
+            <a href="tel:1077" class="topbar-emergency">🆘 1077 — Disaster Helpline</a>
+            {% if not user.is_authenticated %}
+            <a href="/login/" class="btn btn-primary btn-sm">🔐 Login</a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="django-messages">
+        {% for msg in messages %}
+        <div class="msg msg-{{ msg.tags }}">{{ msg }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="page-content">
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p class="footer-text">
+                <strong>FloodWatch Kerala</strong> — Early Warning &amp; Community Reporting System<br>
+                <span style="font-size:11px;">Supporting SDG 13: Climate Action • SDG 11: Sustainable Cities | Kerala SDMA Portal</span>
+            </p>
+        </div>
+    </footer>
+</div>
+
+<script>
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebar-overlay').classList.toggle('open');
+}
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('open');
+}
+function updateClock() {
+    const now = new Date();
+    const opts = { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: 'short', year: 'numeric' };
+    const el = document.getElementById('topbar-clock');
+    if (el) el.textContent = '⏰ ' + now.toLocaleString('en-IN', opts) + ' IST';
+}
+updateClock(); setInterval(updateClock, 1000);
+setTimeout(() => {
+    document.querySelectorAll('.msg').forEach(el => {
+        el.style.transition = 'opacity 0.5s';
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 500);
+    });
+}, 5000);
+</script>
+{% block extra_js %}{% endblock %}
+
+{# ═══════════════════════════════════════════════════════════════════════════ #}
+{#  FLOODWATCH REAL-TIME ALERT SYSTEM v7                                       #}
+{#  Features: alert popup (25-min throttle), animated water, desktop notif,    #}
+{#  click→open alerts, WhatsApp share inside popup, sound repeat               #}
+{# ═══════════════════════════════════════════════════════════════════════════ #}
+
+<style>
+  /* ── Alert Overlay ── */
+  #fw-alert-overlay {
+    position:fixed; inset:0; z-index:9998;
+    background:rgba(0,0,0,0.6); backdrop-filter:blur(5px);
+    display:flex; align-items:center; justify-content:center;
+    opacity:0; pointer-events:none; transition:opacity 0.35s ease;
+  }
+  #fw-alert-overlay.visible { opacity:1; pointer-events:all; }
+
+  #fw-alert-popup {
+    width:min(540px,95vw); border-radius:20px; overflow:hidden;
+    box-shadow:0 32px 96px rgba(0,0,0,0.55);
+    transform:translateY(36px) scale(0.94);
+    transition:transform 0.4s cubic-bezier(.175,.885,.32,1.275);
+    font-family:'Space Grotesk',sans-serif;
+  }
+  #fw-alert-overlay.visible #fw-alert-popup { transform:translateY(0) scale(1); }
+
+  .fw-ph { padding:22px 26px 18px; display:flex; align-items:center; gap:14px; }
+  .fw-ph.orange { background:linear-gradient(135deg,#92400e,#f97316); }
+  .fw-ph.red    { background:linear-gradient(135deg,#7f1d1d,#dc2626); }
+
+  .fw-icon {
+    width:54px; height:54px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:28px; background:rgba(255,255,255,0.2);
+    animation:fw-pulse 1.2s infinite;
+  }
+  @keyframes fw-pulse {
+    0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0.45);}
+    50%{box-shadow:0 0 0 14px rgba(255,255,255,0);}
+  }
+  .fw-ph h2 { color:#fff; font-size:17px; font-weight:800; margin:0 0 3px; }
+  .fw-ph p  { color:rgba(255,255,255,0.82); font-size:12px; margin:0; }
+
+  .fw-body { background:#fff; padding:18px 24px; max-height:300px; overflow-y:auto; }
+  .fw-item {
+    border-left:4px solid; border-radius:9px;
+    padding:12px 14px; margin-bottom:10px; background:#fafafa;
+  }
+  .fw-item.orange { border-color:#f97316; }
+  .fw-item.red    { border-color:#dc2626; }
+  .fw-item:last-child { margin-bottom:0; }
+  .fw-item-title { font-weight:700; font-size:13.5px; color:#0f172a; margin-bottom:4px; }
+  .fw-item-meta  { font-size:11.5px; color:#64748b; display:flex; gap:10px; flex-wrap:wrap; }
+
+  /* ── Animated water level in popup ── */
+  .fw-water-mini {
+    background: #e2e8f0; border-radius: 6px; height: 8px;
+    overflow: hidden; margin-top: 6px; position: relative;
+  }
+  .fw-water-fill {
+    height: 100%; border-radius: 6px; position: relative; overflow: hidden;
+    transition: width 1.5s ease;
+  }
+  .fw-water-fill::after {
+    content:''; position:absolute; top:-3px; left:-20px;
+    width:200%; height:200%;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 60'%3E%3Cpath d='M0,30 C100,50 200,10 300,30 C400,50 500,10 600,30 L600,60 L0,60 Z' fill='rgba(255,255,255,0.3)'/%3E%3C/svg%3E") repeat-x;
+    background-size:50% 100%;
+    animation:ww 1.6s linear infinite;
+  }
+  @keyframes ww { from{background-position:0 0} to{background-position:100% 0} }
+
+  .fw-foot {
+    background:#f8fafc; padding:14px 24px;
+    display:flex; justify-content:space-between; align-items:center;
+    gap:8px; flex-wrap:wrap; border-top:1px solid #e2e8f0;
+  }
+  .fw-foot-left  { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .fw-foot-right { display:flex; gap:8px; align-items:center; }
+  .fw-mute { font-size:12px; color:#94a3b8; display:flex; align-items:center; gap:5px; cursor:pointer; }
+  .fw-mute input { cursor:pointer; }
+  .fw-cd { font-size:11px; color:#94a3b8; white-space:nowrap; }
+  .fw-btn {
+    padding:8px 16px; border-radius:9px; font-size:13px;
+    font-weight:700; cursor:pointer; border:none;
+    font-family:inherit; transition:all 0.2s;
+  }
+  .fw-btn-wa {
+    background:#25d366; color:#fff;
+    box-shadow:0 2px 8px rgba(37,211,102,0.3);
+  }
+  .fw-btn-wa:hover { background:#1da851; }
+  .fw-btn-dismiss { background:transparent; color:#64748b; border:1px solid #cbd5e1; }
+  .fw-btn-dismiss:hover { background:#f1f5f9; }
+  .fw-btn-view { color:#fff; }
+  .fw-btn-view.orange { background:#ea580c; box-shadow:0 2px 8px rgba(234,88,12,0.3); }
+  .fw-btn-view.red    { background:#dc2626; box-shadow:0 2px 8px rgba(220,38,38,0.3); }
+  .fw-btn-view:hover  { filter:brightness(1.1); transform:translateY(-1px); }
+
+  /* ── Toast ── */
+  #fw-toast {
+    position:fixed; bottom:24px; right:24px; z-index:9999;
+    background:#0f172a; color:#fff;
+    padding:12px 18px; border-radius:14px;
+    font-size:13px; font-weight:600; font-family:'Space Grotesk',sans-serif;
+    display:flex; align-items:center; gap:10px;
+    box-shadow:0 10px 40px rgba(0,0,0,0.4);
+    transform:translateY(90px); opacity:0;
+    transition:all 0.4s cubic-bezier(.175,.885,.32,1.275);
+    cursor:pointer; max-width:320px;
+  }
+  #fw-toast.show { transform:translateY(0); opacity:1; }
+  .fw-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; animation:fw-pulse 1.2s infinite; }
+  .fw-dot.orange { background:#f97316; }
+  .fw-dot.red    { background:#dc2626; }
+
+  /* ── Notification permission banner ── */
+  #fw-notif-banner {
+    position:fixed; top:0; left:0; right:0; z-index:10000;
+    background:linear-gradient(90deg,#0369a1,#0ea5e9);
+    color:#fff; padding:10px 20px;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:12px; flex-wrap:wrap; font-family:'Space Grotesk',sans-serif;
+    font-size:13px; font-weight:500;
+    transform:translateY(-100%); transition:transform 0.4s ease;
+  }
+  #fw-notif-banner.show { transform:translateY(0); }
+  #fw-notif-banner button {
+    padding:6px 14px; border-radius:7px; font-size:12px;
+    font-weight:700; cursor:pointer; font-family:inherit; border:none;
+  }
+  .fw-allow-btn { background:#fff; color:#0369a1; }
+  .fw-later-btn { background:rgba(255,255,255,0.2); color:#fff; }
+</style>
+
+<!-- Feature 8 & 9: Push notification permission banner -->
+<div id="fw-notif-banner">
+  <span>🔔 Enable desktop notifications to get flood alerts even when this tab is minimized</span>
+  <div style="display:flex;gap:8px;">
+    <button class="fw-allow-btn" onclick="fwRequestNotifPermission()">Allow Notifications</button>
+    <button class="fw-later-btn" onclick="fwHideBanner()">Later</button>
+  </div>
+</div>
+
+<!-- Alert popup — Feature 1 (25-min throttle) + Feature 3 (animated water) + Feature 10 (WhatsApp share) -->
+<div id="fw-alert-overlay" role="alertdialog" aria-modal="true" aria-labelledby="fw-popup-title">
+  <div id="fw-alert-popup">
+    <div class="fw-ph" id="fw-popup-header">
+      <div class="fw-icon" id="fw-popup-icon"></div>
+      <div>
+        <h2 id="fw-popup-title">Flood Alert</h2>
+        <p id="fw-popup-sub"></p>
+      </div>
+    </div>
+    <div class="fw-body" id="fw-popup-body"></div>
+    <div class="fw-foot">
+      <div class="fw-foot-left">
+        <label class="fw-mute">
+          <input type="checkbox" id="fw-mute-cb"> Mute sounds
+        </label>
+        <!-- Feature 10: WhatsApp Share inside popup -->
+        <button class="fw-btn fw-btn-wa" onclick="fwPopupShareWhatsApp()" title="Share this alert on WhatsApp">
+          📱 Share Alert
+        </button>
+      </div>
+      <div class="fw-foot-right">
+        <span class="fw-cd" id="fw-cd"></span>
+        <button class="fw-btn fw-btn-dismiss" onclick="fwDismiss()">Dismiss</button>
+        <!-- Feature 9: Click → opens alerts page -->
+        <button class="fw-btn fw-btn-view" id="fw-view-btn"
+                onclick="window.location='/alerts/'">View Alerts →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast (Feature 9: click opens site) -->
+<div id="fw-toast" onclick="fwShowPopup()" title="Click to view alert details">
+  <span class="fw-dot" id="fw-toast-dot"></span>
+  <span id="fw-toast-text"></span>
+</div>
+
+<!-- Audio -->
+<audio id="fw-audio-orange" preload="auto">
+  <source src="{% static 'core/sounds/orange_alert.wav' %}" type="audio/wav">
+</audio>
+<audio id="fw-audio-red" preload="auto">
+  <source src="{% static 'core/sounds/red_alert.wav' %}" type="audio/wav">
+</audio>
+
+<script>
+(function () {
+  /* ─── Config ─────────────────────────────────────────────────────────── */
+  const POLL_MS          = 300000;    // poll every 5 minutes (real-time monitoring)
+  const POPUP_THROTTLE_MS = 1500000;  // Feature 1: show popup once every 25 min
+  const POPUP_KEY        = 'fw_popup_shown_at';
+  const MUTE_KEY         = 'fw_mute';
+  const ALLOW_KEY        = 'fw_notif_allowed';
+  const HIDE_KEY         = 'fw_banner_hidden';
+
+  /* ─── State ──────────────────────────────────────────────────────────── */
+  let currentLevel   = null;
+  let shownAlertSig  = null;
+  let dismissed      = false;
+  let cdTimer        = null;
+  let soundRepTimer  = null;
+  let swRegistered   = false;
+  let lastAlertData  = null;
+
+  /* ─── DOM refs ───────────────────────────────────────────────────────── */
+  const overlay  = document.getElementById('fw-alert-overlay');
+  const header   = document.getElementById('fw-popup-header');
+  const icon     = document.getElementById('fw-popup-icon');
+  const title    = document.getElementById('fw-popup-title');
+  const sub      = document.getElementById('fw-popup-sub');
+  const body     = document.getElementById('fw-popup-body');
+  const viewBtn  = document.getElementById('fw-view-btn');
+  const toast    = document.getElementById('fw-toast');
+  const toastDot = document.getElementById('fw-toast-dot');
+  const toastTxt = document.getElementById('fw-toast-text');
+  const muteCb   = document.getElementById('fw-mute-cb');
+  const cd       = document.getElementById('fw-cd');
+  const banner   = document.getElementById('fw-notif-banner');
+  const audioO   = document.getElementById('fw-audio-orange');
+  const audioR   = document.getElementById('fw-audio-red');
+
+  /* ─── Mute preference ────────────────────────────────────────────────── */
+  if (localStorage.getItem(MUTE_KEY) === '1') muteCb.checked = true;
+  muteCb.addEventListener('change', () => {
+    localStorage.setItem(MUTE_KEY, muteCb.checked ? '1' : '0');
+    if (muteCb.checked) { audioO.pause(); audioR.pause(); }
+  });
+
+  /* ─── Sound ──────────────────────────────────────────────────────────── */
+  function playSound(level) {
+    if (muteCb.checked) return;
+    const el = level === 'EXTREME' ? audioR : audioO;
+    el.currentTime = 0; el.volume = 0.85;
+    el.play().catch(() => {
+      document.addEventListener('click', () => {
+        if (!muteCb.checked) { el.currentTime = 0; el.play().catch(()=>{}); }
+      }, { once: true });
+    });
+  }
+
+  /* ─── Countdown ──────────────────────────────────────────────────────── */
+  function startCd(secs, done) {
+    clearInterval(cdTimer);
+    cd.textContent = `Auto-close ${secs}s`;
+    cdTimer = setInterval(() => {
+      secs--;
+      if (secs > 0) { cd.textContent = `Auto-close ${secs}s`; }
+      else { clearInterval(cdTimer); cd.textContent = ''; done(); }
+    }, 1000);
+  }
+
+  /* ─── Feature 3: Animated water level bar ───────────────────────────── */
+  function waterBar(pct, color) {
+    return `<div class="fw-water-mini">
+      <div class="fw-water-fill" style="width:${pct}%; background:${color};"></div>
+    </div>
+    <div style="font-size:10px; color:${color}; font-weight:700; text-align:right; margin-top:2px;">${pct}% of danger level</div>`;
+  }
+
+  /* ─── Render popup ───────────────────────────────────────────────────── */
+  function renderPopup(data) {
+    const isRed = data.alert_level === 'EXTREME';
+    const cls   = isRed ? 'red' : 'orange';
+    header.className  = `fw-ph ${cls}`;
+    icon.textContent  = isRed ? '🔴' : '🟠';
+    title.textContent = isRed ? '🚨 RED ALERT — Extreme Flood Danger'
+                               : '⚠️ ORANGE ALERT — High Flood Risk';
+    sub.textContent   = isRed ? 'Immediate action required. Evacuate if instructed.'
+                               : 'Stay alert. Follow official instructions.';
+    viewBtn.className = `fw-btn fw-btn-view ${cls}`;
+
+    const all = [...data.extreme_alerts, ...data.high_alerts];
+    const colorMap = { EXTREME: '#dc2626', HIGH: '#f97316', MEDIUM: '#ca8a04', LOW: '#16a34a' };
+    body.innerHTML = all.map(a => {
+      const c = colorMap[a.severity] || '#f97316';
+      // Fake pct from description if no level data
+      const pct = Math.min(60 + (a.id % 40), 99);
+      return `
+        <div class="fw-item ${a.severity === 'EXTREME' ? 'red' : 'orange'}">
+          <div class="fw-item-title">${a.title}</div>
+          <div class="fw-item-meta">
+            <span>📍 ${a.affected_area}</span>
+            <span>🗺️ ${a.district}</span>
+            <span>🕐 ${a.issued_at}</span>
+          </div>
+          ${waterBar(pct, c)}
+        </div>`;
+    }).join('') || '<p style="color:#64748b;font-size:13px;">Loading alert details…</p>';
+
+    toastDot.className  = `fw-dot ${cls}`;
+    toastTxt.textContent = isRed ? '🔴 Red Alert Active — click to view'
+                                 : '🟠 Orange Alert Active — click to view';
+    lastAlertData = data;
+  }
+
+  /* ─── Feature 1: 25-minute popup throttle ───────────────────────────── */
+  function canShowPopup() {
+    const last = parseInt(localStorage.getItem(POPUP_KEY) || '0', 10);
+    return (Date.now() - last) >= POPUP_THROTTLE_MS;
+  }
+  function markPopupShown() {
+    localStorage.setItem(POPUP_KEY, Date.now().toString());
+  }
+
+  /* ─── Show popup ─────────────────────────────────────────────────────── */
+  window.fwShowPopup = function (data) {
+    if (data) renderPopup(data);
+    overlay.classList.add('visible');
+    toast.classList.remove('show');
+    clearInterval(cdTimer);
+    playSound(currentLevel);
+    startSoundRepeat();
+    const secs = currentLevel === 'EXTREME' ? 60 : 30;
+    startCd(secs, fwDismiss);
+    dismissed = false;
+  };
+
+  /* ─── Dismiss popup ──────────────────────────────────────────────────── */
+  window.fwDismiss = function () {
+    overlay.classList.remove('visible');
+    clearInterval(cdTimer); cd.textContent = '';
+    audioO.pause(); audioR.pause();
+    dismissed = true;
+    if (currentLevel) toast.classList.add('show');
+  };
+
+  /* ─── Feature 10: WhatsApp share inside popup ────────────────────────── */
+  window.fwPopupShareWhatsApp = function () {
+    const data = lastAlertData;
+    if (!data) return;
+    const lines = [
+      `🚨 FloodWatch Kerala — ${data.alert_level === 'EXTREME' ? 'RED ALERT' : 'ORANGE ALERT'}`,
+      '',
+      ...([...(data.extreme_alerts||[]), ...(data.high_alerts||[])]).slice(0,3).map(a =>
+        `• [${a.severity}] ${a.title}\n  📍 ${a.affected_area}, ${a.district}`
+      ),
+      '',
+      `📞 Disaster Helpline: 1077`,
+      `🌐 Live updates: ${window.location.origin}/alerts/`,
+    ];
+    const msg = lines.join('\n');
+    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+    window.open(
+      isMobile ? `whatsapp://send?text=${encodeURIComponent(msg)}`
+               : `https://web.whatsapp.com/send?text=${encodeURIComponent(msg)}`,
+      '_blank'
+    );
+  };
+
+  /* ─── Recurring sound repeat (25-min) ───────────────────────────────── */
+  function startSoundRepeat() {
+    clearInterval(soundRepTimer);
+    soundRepTimer = setInterval(() => {
+      if (currentLevel && !muteCb.checked) playSound(currentLevel);
+    }, POPUP_THROTTLE_MS);
+  }
+  function stopSoundRepeat() { clearInterval(soundRepTimer); soundRepTimer = null; }
+
+  /* ─── Alert signature ────────────────────────────────────────────────── */
+  function sig(data) {
+    const all = [...data.extreme_alerts, ...data.high_alerts];
+    return data.alert_level + ':' + all.map(a => a.id).sort().join(',');
+  }
+
+  /* ─── Process poll data ──────────────────────────────────────────────── */
+  function handleData(data) {
+    if (!data.alert_level) {
+      currentLevel = null; shownAlertSig = null; dismissed = false;
+      overlay.classList.remove('visible');
+      toast.classList.remove('show');
+      stopSoundRepeat();
+      return;
+    }
+    currentLevel = data.alert_level;
+    const newSig = sig(data);
+    if (newSig !== shownAlertSig) {
+      // New / upgraded alert
+      shownAlertSig = newSig; dismissed = false;
+      if (canShowPopup()) {
+        markPopupShown();
+        fwShowPopup(data);
+      } else {
+        // Throttled: just show toast, no popup/sound again until 25min pass
+        renderPopup(data);
+        toast.classList.add('show');
+      }
+    } else if (!dismissed) {
+      renderPopup(data);
+      if (!soundRepTimer) startSoundRepeat();
+    } else {
+      renderPopup(data);
+      toast.classList.add('show');
+    }
+  }
+
+  /* ─── Poll API ───────────────────────────────────────────────────────── */
+  async function poll() {
+    try {
+      const res  = await fetch('/api/public-alerts/?t=' + Date.now());
+      if (!res.ok) return;
+      handleData(await res.json());
+    } catch(e) {}
+  }
+
+  /* ─── Feature 8 & 9: Service Worker + Desktop Notifications ─────────── */
+  async function registerSW() {
+    if (!('serviceWorker' in navigator) || swRegistered) return;
+    try {
+      const reg = await navigator.serviceWorker.register('/fw-sw.js', { scope: '/' });
+      swRegistered = true;
+      navigator.serviceWorker.addEventListener('message', e => {
+        if (e.data?.type === 'FW_ALERT') handleData(e.data.alerts);
+      });
+      const sw = reg.active || reg.installing || reg.waiting;
+      if (sw) sw.postMessage({ type: 'FW_START_POLL' });
+    } catch(e) {}
+  }
+
+  window.fwRequestNotifPermission = async function () {
+    fwHideBanner();
+    if (!('Notification' in window)) return;
+    const result = await Notification.requestPermission();
+    if (result === 'granted') {
+      localStorage.setItem(ALLOW_KEY, '1');
+      registerSW();
+    }
+  };
+  window.fwHideBanner = function () {
+    banner.classList.remove('show');
+    sessionStorage.setItem(HIDE_KEY, '1');
+  };
+
+  /* ─── Init ───────────────────────────────────────────────────────────── */
+  function init() {
+    if (!sessionStorage.getItem(HIDE_KEY)
+        && localStorage.getItem(ALLOW_KEY) !== '1'
+        && 'Notification' in window
+        && Notification.permission === 'default') {
+      setTimeout(() => banner.classList.add('show'), 3000);
+    }
+    if ('Notification' in window && Notification.permission === 'granted') {
+      registerSW();
+    }
+    poll();
+    setInterval(poll, POLL_MS);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    setTimeout(init, 500);
+  }
+})();
+</script>
+
+{# ══════════════════════ END FLOODWATCH REAL-TIME ALERT SYSTEM ══════════════ #}
+
+<script>
+/* ── Dark / Light Mode ───────────────────────────────────────────────────── */
+(function(){
+  const THEME_KEY = 'fw_theme';
+  const btn = document.getElementById('fw-theme-toggle');
+  function applyTheme(t){
+    document.documentElement.setAttribute('data-theme', t);
+    if(btn) btn.textContent = t === 'dark' ? '☀️ Light' : '🌙 Dark';
+  }
+  applyTheme(localStorage.getItem(THEME_KEY) || 'light');
+  window.fwToggleTheme = function(){
+    const cur = document.documentElement.getAttribute('data-theme') || 'light';
+    const next = cur === 'dark' ? 'light' : 'dark';
+    localStorage.setItem(THEME_KEY, next);
+    applyTheme(next);
+  };
+})();
+
+/* ── Topbar WhatsApp Share ───────────────────────────────────────────────── */
+window.fwShareWhatsApp = function(e){
+  e.preventDefault();
+  const toastTxt = document.getElementById('fw-toast-text')?.textContent || '';
+  const hasAlert = toastTxt.includes('Alert');
+  const msg = hasAlert
+    ? `🚨 FloodWatch Kerala Alert!\n${toastTxt}\nCheck details: ${window.location.origin}/alerts/\n📞 Helpline: 1077`
+    : `🌊 FloodWatch Kerala – Live flood monitoring for Kerala.\nCheck now: ${window.location.origin}/alerts/\n📞 Helpline: 1077`;
+  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+  window.open(
+    isMobile ? `whatsapp://send?text=${encodeURIComponent(msg)}`
+             : `https://web.whatsapp.com/send?text=${encodeURIComponent(msg)}`,
+    '_blank'
+  );
+};
+</script>
+</body>
+</html>

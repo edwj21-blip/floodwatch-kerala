@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FloodWatch Kerala — Flood Management Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Space Grotesk',sans-serif; background:#f1f5f9; color:#0f172a; min-height:100vh; }
+
+        /* TOPBAR */
+        .topbar { background:#0f172a; height:40px; padding:0 28px; display:flex; align-items:center; justify-content:space-between; font-size:12px; color:#94a3b8; }
+        .topbar a { color:#38bdf8; text-decoration:none; font-weight:600; }
+        .topbar a:hover { color:white; }
+        .live-dot { width:6px; height:6px; border-radius:50%; background:#4ade80; display:inline-block; margin-right:4px; animation:blink 2s infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        /* NAVBAR */
+        .navbar { background:white; border-bottom:1px solid #e2e8f0; height:62px; padding:0 28px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 1px 4px rgba(0,0,0,0.06); }
+        .nav-brand { display:flex; align-items:center; gap:10px; text-decoration:none; }
+        .nav-logo { width:38px; height:38px; border-radius:11px; background:linear-gradient(135deg,#0ea5e9,#6366f1); display:flex; align-items:center; justify-content:center; font-size:20px; }
+        .brand-text { font-family:'Syne',sans-serif; font-size:20px; font-weight:800; color:#0f172a; }
+        .brand-text span { color:#0369a1; }
+        .nav-right { display:flex; align-items:center; gap:10px; }
+
+        /* BUTTONS */
+        .btn { display:inline-flex; align-items:center; gap:6px; padding:9px 20px; border-radius:9px; font-family:inherit; font-size:14px; font-weight:600; cursor:pointer; border:none; text-decoration:none; transition:all 0.2s; }
+        .btn-outline { background:white; color:#0369a1; border:1.5px solid #0369a1; }
+        .btn-outline:hover { background:#eff6ff; }
+        .btn-primary { background:#0369a1; color:white; }
+        .btn-primary:hover { background:#075985; transform:translateY(-1px); box-shadow:0 4px 14px rgba(3,105,161,0.3); }
+        .btn-danger { background:#dc2626; color:white; }
+        .btn-danger:hover { background:#b91c1c; }
+        .btn-gold { background:linear-gradient(135deg,#d97706,#b45309); color:white; }
+        .btn-gold:hover { opacity:0.9; transform:translateY(-1px); }
+        .btn-lg { padding:13px 28px; font-size:15px; border-radius:11px; }
+        .btn-full { width:100%; justify-content:center; }
+
+        /* HERO — light gradient instead of dark */
+        .hero {
+            background: linear-gradient(160deg, #0c4a6e 0%, #075985 40%, #0369a1 100%);
+            padding:72px 28px 56px; text-align:center; position:relative; overflow:hidden;
+        }
+        .hero::before {
+            content:''; position:absolute; inset:0;
+            background: radial-gradient(ellipse at 25% 40%, rgba(56,189,248,0.18) 0%, transparent 55%),
+                        radial-gradient(ellipse at 80% 70%, rgba(255,255,255,0.06) 0%, transparent 50%);
+        }
+        .hero-inner { position:relative; max-width:820px; margin:0 auto; }
+        .hero-badge { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); color:white; padding:5px 16px; border-radius:20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:22px; }
+        .hero h1 { font-family:'Syne',sans-serif; font-size:52px; font-weight:900; color:white; line-height:1.1; margin-bottom:14px; letter-spacing:-1.5px; }
+        .hero h1 span { color:#bae6fd; }
+        .hero-sub { font-size:17px; color:rgba(255,255,255,0.75); max-width:520px; margin:0 auto 32px; line-height:1.7; }
+        .hero-btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+        .btn-white { background:white; color:#0369a1; font-weight:700; }
+        .btn-white:hover { background:#f0f9ff; transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,0.15); }
+        .btn-ghost-white { background:rgba(255,255,255,0.12); color:white; border:1.5px solid rgba(255,255,255,0.3); }
+        .btn-ghost-white:hover { background:rgba(255,255,255,0.22); }
+
+        /* STATS row in hero */
+        .hero-stats { display:flex; gap:32px; justify-content:center; flex-wrap:wrap; margin-top:48px; padding-top:36px; border-top:1px solid rgba(255,255,255,0.15); }
+        .hstat-num { font-family:'Syne',sans-serif; font-size:30px; font-weight:800; color:white; }
+        .hstat-label { font-size:12px; color:rgba(255,255,255,0.6); margin-top:2px; }
+
+        /* EMERGENCY STRIP */
+        .emg-strip { background:#fef2f2; border-top:2px solid #fecaca; border-bottom:2px solid #fecaca; padding:16px 28px; display:flex; align-items:center; justify-content:center; gap:28px; flex-wrap:wrap; }
+        .emg-num { font-family:'Syne',sans-serif; font-size:26px; font-weight:800; color:#dc2626; }
+        .emg-name { font-size:11px; color:#64748b; }
+        .emg-div { width:1px; height:36px; background:#fecaca; }
+
+        /* PORTALS SECTION */
+        .portals-section { max-width:1060px; margin:0 auto; padding:60px 24px; }
+        .sec-title { text-align:center; font-family:'Syne',sans-serif; font-size:30px; font-weight:800; margin-bottom:8px; color:#0f172a; }
+        .sec-sub { text-align:center; color:#64748b; font-size:15px; margin-bottom:44px; }
+        .portals-grid { display:grid; grid-template-columns:1fr 1fr; gap:28px; }
+
+        /* PORTAL CARDS */
+        .pcard { background:white; border-radius:20px; border:1.5px solid #e2e8f0; box-shadow:0 4px 24px rgba(0,0,0,0.06); overflow:hidden; transition:all 0.25s; }
+        .pcard:hover { transform:translateY(-4px); box-shadow:0 12px 40px rgba(0,0,0,0.1); }
+        .pcard-head { padding:24px 28px 18px; display:flex; align-items:center; gap:14px; }
+        .pcard-icon { width:50px; height:50px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
+        .icon-user { background:linear-gradient(135deg,#e0f2fe,#bae6fd); }
+        .icon-admin { background:linear-gradient(135deg,#fef9c3,#fde68a); }
+        .pcard-title { font-family:'Syne',sans-serif; font-size:20px; font-weight:800; color:#0f172a; }
+        .pcard-desc { font-size:13px; color:#64748b; margin-top:2px; }
+        .pcard-body { padding:0 28px 28px; }
+        .pcard-div { height:1px; background:#f1f5f9; margin-bottom:20px; }
+
+        /* TABS */
+        .tabs { display:flex; background:#f1f5f9; border-radius:10px; padding:4px; margin-bottom:18px; }
+        .tab { flex:1; padding:8px; border:none; border-radius:7px; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; background:transparent; color:#64748b; transition:all 0.2s; }
+        .tab.active { background:white; color:#0f172a; box-shadow:0 1px 4px rgba(0,0,0,0.08); }
+        .tab-panel { display:none; }
+        .tab-panel.active { display:block; }
+
+        /* FORMS */
+        .fgroup { margin-bottom:13px; }
+        .flabel { display:block; font-size:11px; font-weight:700; color:#475569; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.3px; }
+        .finput { width:100%; background:#f8fafc; border:1.5px solid #e2e8f0; color:#0f172a; border-radius:9px; padding:10px 14px; font-family:inherit; font-size:14px; outline:none; transition:all 0.2s; }
+        .finput:focus { border-color:#0ea5e9; background:white; box-shadow:0 0 0 3px rgba(14,165,233,0.1); }
+        .finput::placeholder { color:#94a3b8; }
+        .frow { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .ffoot { text-align:center; font-size:13px; color:#64748b; margin-top:12px; }
+        .ffoot a { color:#0369a1; font-weight:600; text-decoration:none; }
+        .msg-box { padding:10px 14px; border-radius:9px; font-size:13px; font-weight:500; margin-bottom:12px; border:1px solid; }
+        .msg-error { background:#fef2f2; border-color:#fca5a5; color:#dc2626; }
+        .msg-success { background:#f0fdf4; border-color:#86efac; color:#15803d; }
+
+        /* FEATURES */
+        .features-wrap { background:white; border-top:1px solid #e2e8f0; padding:56px 24px; }
+        .feat-inner { max-width:1060px; margin:0 auto; }
+        .feat-title { text-align:center; font-family:'Syne',sans-serif; font-size:28px; font-weight:800; margin-bottom:36px; color:#0f172a; }
+        .feat-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+        .feat-card { background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:22px; transition:all 0.2s; }
+        .feat-card:hover { border-color:#0369a1; background:#eff6ff; }
+        .feat-icon { font-size:30px; margin-bottom:10px; }
+        .feat-title2 { font-weight:700; font-size:15px; margin-bottom:6px; color:#0f172a; }
+        .feat-desc { font-size:13px; color:#64748b; line-height:1.6; }
+
+        /* FOOTER */
+        footer { background:#0f172a; color:#64748b; text-align:center; padding:24px; font-size:13px; }
+        footer strong { color:#38bdf8; }
+
+        @media(max-width:780px){
+            .portals-grid,.feat-grid { grid-template-columns:1fr; }
+            .hero h1 { font-size:34px; }
+            .frow { grid-template-columns:1fr; }
+            .topbar span:last-child { display:none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+    <div style="display:flex;align-items:center;gap:20px;">
+        <span>🌊 FloodWatch Kerala — Official SDMA Portal</span>
+        <span>📞 Emergency: <a href="tel:1077">1077</a></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+        <span><span class="live-dot"></span>LIVE MONITORING</span>
+        <span id="clock" style="font-size:11px;"></span>
+    </div>
+</div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <a href="/portal/" class="nav-brand">
+        <div class="nav-logo">🌊</div>
+        <div class="brand-text">Flood<span>Watch</span></div>
+    </a>
+    <div class="nav-right">
+        <a href="/login/" class="btn btn-outline">🔐 Login</a>
+        <a href="/register/" class="btn btn-primary">📝 Register</a>
+    </div>
+</nav>
+
+<!-- HERO (blue, not dark) -->
+<section class="hero">
+    <div class="hero-inner">
+        <div class="hero-badge">🛡️ Kerala SDMA — Official Early Warning System</div>
+        <h1>Kerala <span>FloodWatch</span><br>Management Portal</h1>
+        <p class="hero-sub">Real-time flood monitoring, community reporting &amp; rescue coordination across all 14 districts of Kerala.</p>
+        <div class="hero-btns">
+            <a href="/register/" class="btn btn-white btn-lg">📝 Create Account</a>
+            <a href="/login/" class="btn btn-ghost-white btn-lg">🔐 Sign In</a>
+            <a href="tel:1077" class="btn btn-danger btn-lg">🆘 1077</a>
+        </div>
+        <div class="hero-stats">
+            <div><div class="hstat-num">14</div><div class="hstat-label">Districts Covered</div></div>
+            <div><div class="hstat-num">24/7</div><div class="hstat-label">Live Monitoring</div></div>
+            <div><div class="hstat-num">{{ active_alerts }}</div><div class="hstat-label">Active Alerts</div></div>
+            <div><div class="hstat-num">{{ rescue_teams }}</div><div class="hstat-label">Rescue Teams Ready</div></div>
+        </div>
+    </div>
+</section>
+
+<!-- EMERGENCY STRIP -->
+<div class="emg-strip">
+    <span style="font-size:12px;font-weight:800;color:#dc2626;">🆘 EMERGENCY</span>
+    <div class="emg-div"></div>
+    <div><a href="tel:1077" style="text-decoration:none;"><div class="emg-num">1077</div><div class="emg-name">Disaster Helpline</div></a></div>
+    <div class="emg-div"></div>
+    <div><a href="tel:112" style="text-decoration:none;"><div class="emg-num">112</div><div class="emg-name">National Emergency</div></a></div>
+    <div class="emg-div"></div>
+    <div><a href="tel:101" style="text-decoration:none;"><div class="emg-num" style="color:#d97706;">101</div><div class="emg-name">Fire &amp; Rescue</div></a></div>
+    <div class="emg-div"></div>
+    <div><a href="tel:100" style="text-decoration:none;"><div class="emg-num" style="color:#d97706;">100</div><div class="emg-name">Police</div></a></div>
+    <div class="emg-div"></div>
+    <div><a href="tel:104" style="text-decoration:none;"><div class="emg-num" style="color:#16a34a;">104</div><div class="emg-name">Medical</div></a></div>
+</div>
+
+<!-- PORTALS -->
+<section class="portals-section">
+    <h2 class="sec-title">🔐 Access Portals</h2>
+    <p class="sec-sub">Register or sign in to access the full FloodWatch dashboard, report floods, and track rescue operations.</p>
+
+    {% if messages %}
+    <div style="max-width:600px; margin:0 auto 20px;">
+        {% for msg in messages %}
+        <div class="msg-box msg-error">❌ {{ msg }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="portals-grid">
+
+        <!-- USER PORTAL -->
+        <div class="pcard">
+            <div class="pcard-head">
+                <div class="pcard-icon icon-user">👤</div>
+                <div>
+                    <div class="pcard-title">User Portal</div>
+                    <div class="pcard-desc">Public users — report floods, view alerts &amp; rescue teams</div>
+                </div>
+            </div>
+            <div class="pcard-body">
+                <div class="pcard-div"></div>
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('u','login')">🔐 Login</button>
+                    <button class="tab" onclick="switchTab('u','register')">📝 Register</button>
+                </div>
+
+                <!-- Login -->
+                <div id="u-login" class="tab-panel active">
+                    <form method="post" action="/login/">
+                        {% csrf_token %}
+                        <div class="fgroup">
+                            <label class="flabel">Username</label>
+                            <input type="text" name="username" class="finput" placeholder="Your username" required>
+                        </div>
+                        <div class="fgroup">
+                            <label class="flabel">Password</label>
+                            <input type="password" name="password" class="finput" placeholder="Your password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full">🔐 Login to Dashboard</button>
+                    </form>
+                    <div class="ffoot">No account? <a href="#" onclick="switchTab('u','register');return false;">Register here →</a></div>
+                </div>
+
+                <!-- Register -->
+                <div id="u-register" class="tab-panel">
+                    <form method="post" action="/register/">
+                        {% csrf_token %}
+                        <div class="frow">
+                            <div class="fgroup"><label class="flabel">First Name</label><input type="text" name="first_name" class="finput" placeholder="First"></div>
+                            <div class="fgroup"><label class="flabel">Last Name</label><input type="text" name="last_name" class="finput" placeholder="Last"></div>
+                        </div>
+                        <div class="fgroup"><label class="flabel">Username *</label><input type="text" name="username" class="finput" placeholder="Choose username" required></div>
+                        <div class="fgroup"><label class="flabel">Email</label><input type="email" name="email" class="finput" placeholder="optional"></div>
+                        <div class="fgroup">
+                            <label class="flabel">District</label>
+                            <select name="district" class="finput">
+                                <option value="">Select district</option>
+                                        <option>Thiruvananthapuram</option>
+                                <option>Kollam</option>
+                                <option>Pathanamthitta</option>
+                                <option>Alappuzha</option>
+                                <option>Kottayam</option>
+                                <option>Idukki</option>
+                                <option>Ernakulam</option>
+                                <option>Thrissur</option>
+                                <option>Palakkad</option>
+                                <option>Malappuram</option>
+                                <option>Kozhikode</option>
+                                <option>Wayanad</option>
+                                <option>Kannur</option>
+                                <option>Kasaragod</option>
+                            </select>
+                        </div>
+                        <div class="frow">
+                            <div class="fgroup"><label class="flabel">Password *</label><input type="password" name="password1" class="finput" placeholder="Min 6 chars" required></div>
+                            <div class="fgroup"><label class="flabel">Confirm *</label><input type="password" name="password2" class="finput" placeholder="Repeat" required></div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full">✅ Create Account</button>
+                    </form>
+                    <div class="ffoot">Have account? <a href="#" onclick="switchTab('u','login');return false;">Login →</a></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADMIN PORTAL -->
+        <div class="pcard" style="border-color:#fde68a;">
+            <div class="pcard-head" style="background:linear-gradient(135deg,#fffbeb,#fef9c3);">
+                <div class="pcard-icon icon-admin">🛡️</div>
+                <div>
+                    <div class="pcard-title" style="color:#92400e;">Admin Portal</div>
+                    <div class="pcard-desc">Administrators — manage reports, assign rescue teams</div>
+                </div>
+            </div>
+            <div class="pcard-body">
+                <div class="pcard-div"></div>
+                <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:12px 16px; margin-bottom:16px; display:flex; align-items:flex-start; gap:10px;">
+                    <span style="font-size:18px;">🔒</span>
+                    <div>
+                        <div style="font-weight:700; font-size:13px; color:#92400e;">Restricted Access</div>
+                        <div style="font-size:12px; color:#78716c; margin-top:2px;">Admin accounts are created by the system administrator only</div>
+                    </div>
+                </div>
+                <form method="post" action="/login/">
+                    {% csrf_token %}
+                    <div class="fgroup">
+                        <label class="flabel">Admin Username</label>
+                        <input type="text" name="username" class="finput" placeholder="Admin username" required style="border-color:#fde68a;">
+                    </div>
+                    <div class="fgroup">
+                        <label class="flabel">Admin Password</label>
+                        <input type="password" name="password" class="finput" placeholder="Admin password" required style="border-color:#fde68a;">
+                    </div>
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; margin-bottom:14px;">
+                        <div style="font-size:11px; font-weight:700; color:#475569; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Admin Capabilities</div>
+                        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                            <span style="background:#f0fdf4; border:1px solid #86efac; color:#15803d; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600;">✅ Verify Reports</span>
+                            <span style="background:#eff6ff; border:1px solid #bfdbfe; color:#1d4ed8; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600;">🚁 Assign Teams</span>
+                            <span style="background:#fef2f2; border:1px solid #fca5a5; color:#dc2626; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600;">🚨 Issue Alerts</span>
+                            <span style="background:#faf5ff; border:1px solid #c4b5fd; color:#7c3aed; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600;">📊 View Dashboard</span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-gold btn-full">🛡️ Admin Login</button>
+                </form>
+            </div>
+        </div>
+
+    </div><!-- portals-grid -->
+</section>
+
+<!-- FEATURES -->
+<div class="features-wrap">
+    <div class="feat-inner">
+        <h3 class="feat-title">Why FloodWatch Kerala?</h3>
+        <div class="feat-grid">
+            <div class="feat-card">
+                <div class="feat-icon">🌊</div>
+                <div class="feat-title2">Live Water Level Monitoring</div>
+                <div class="feat-desc">Real-time water level data from all 14 districts, auto-updated every 15 seconds. No manual sync needed.</div>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon">🚨</div>
+                <div class="feat-title2">Instant Flood Alerts</div>
+                <div class="feat-desc">Severity-based alerts (Low to Extreme) issued directly by district authorities for immediate public action.</div>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon">📋</div>
+                <div class="feat-title2">Community Flood Reporting</div>
+                <div class="feat-desc">Citizens can report flood situations with photos. Admins verify and dispatch rescue teams within minutes.</div>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon">🚁</div>
+                <div class="feat-title2">Rescue Team Coordination</div>
+                <div class="feat-desc">Track NDRF, SDRF, Fire & Rescue, Coast Guard teams across all 14 districts with real-time availability.</div>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon">📡</div>
+                <div class="feat-title2">14 District Control Rooms</div>
+                <div class="feat-desc">Direct contact numbers for every district collector office, EOC and fire station across Kerala.</div>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon">🌧️</div>
+                <div class="feat-title2">Rainfall & Weather Data</div>
+                <div class="feat-desc">Live rainfall readings, temperature and humidity for every monitoring station, updated automatically.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p>
+        <strong>FloodWatch Kerala</strong> — Early Warning &amp; Community Reporting System<br>
+        <span style="font-size:11px;">Supporting SDG 13: Climate Action • SDG 11: Sustainable Cities | Kerala SDMA Portal</span>
+    </p>
+</footer>
+
+<script>
+function switchTab(prefix, tab) {
+    ['login','register'].forEach(t => {
+        document.getElementById(prefix+'-'+t)?.classList.toggle('active', t===tab);
+    });
+    const bar = document.getElementById(prefix+'-'+tab)?.closest('.pcard-body')?.querySelector('.tabs');
+    if (bar) bar.querySelectorAll('.tab').forEach((b,i) => b.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register')));
+}
+function updateClock() {
+    const el = document.getElementById('clock');
+    if (el) el.textContent = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', timeZone:'Asia/Kolkata'}) + ' IST';
+}
+updateClock(); setInterval(updateClock, 1000);
+</script>
+
+<!-- ═══ FLOODWATCH PUBLIC ALERT SYSTEM (Portal Page) ═══════════════════════ -->
+{% load static %}
+<style>
+  #fw-alert-overlay{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.58);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .35s ease;}
+  #fw-alert-overlay.visible{opacity:1;pointer-events:all;}
+  #fw-alert-popup{width:min(520px,95vw);border-radius:18px;overflow:hidden;box-shadow:0 28px 80px rgba(0,0,0,.5);transform:translateY(32px) scale(.95);transition:transform .4s cubic-bezier(.175,.885,.32,1.275);font-family:'Space Grotesk',sans-serif;}
+  #fw-alert-overlay.visible #fw-alert-popup{transform:translateY(0) scale(1);}
+  .fw-ph{padding:20px 24px 18px;display:flex;align-items:center;gap:14px;}
+  .fw-ph.orange{background:linear-gradient(135deg,#c2410c,#f97316);}
+  .fw-ph.red{background:linear-gradient(135deg,#7f1d1d,#dc2626);}
+  .fw-icon{width:52px;height:52px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:26px;background:rgba(255,255,255,.18);animation:fw-pulse 1.2s infinite;}
+  @keyframes fw-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.5);}50%{box-shadow:0 0 0 12px rgba(255,255,255,0);}}
+  .fw-ph h2{color:#fff;font-size:17px;font-weight:800;margin:0 0 2px;}
+  .fw-ph p{color:rgba(255,255,255,.8);font-size:12px;margin:0;}
+  .fw-body{background:#fff;padding:18px 24px;max-height:260px;overflow-y:auto;}
+  .fw-item{border-left:4px solid;border-radius:8px;padding:11px 13px;margin-bottom:10px;background:#fafafa;}
+  .fw-item.orange{border-color:#f97316;}.fw-item.red{border-color:#dc2626;}.fw-item:last-child{margin-bottom:0;}
+  .fw-item-title{font-weight:700;font-size:13.5px;color:#0f172a;margin-bottom:3px;}
+  .fw-item-meta{font-size:11.5px;color:#64748b;display:flex;gap:10px;flex-wrap:wrap;}
+  .fw-foot{background:#f8fafc;padding:13px 24px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid #e2e8f0;}
+  .fw-mute{font-size:12px;color:#94a3b8;display:flex;align-items:center;gap:5px;cursor:pointer;}
+  .fw-btn{padding:8px 18px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:all .2s;}
+  .fw-btn-dismiss{background:transparent;color:#64748b;border:1px solid #cbd5e1;}
+  .fw-btn-view{color:#fff;}
+  .fw-btn-view.orange{background:#ea580c;}.fw-btn-view.red{background:#dc2626;}
+  #fw-toast{position:fixed;bottom:20px;right:20px;z-index:9999;background:#0f172a;color:#fff;padding:11px 18px;border-radius:12px;font-size:13px;font-weight:600;font-family:'Space Grotesk',sans-serif;display:flex;align-items:center;gap:10px;box-shadow:0 8px 30px rgba(0,0,0,.35);transform:translateY(80px);opacity:0;transition:all .4s cubic-bezier(.175,.885,.32,1.275);cursor:pointer;max-width:300px;}
+  #fw-toast.show{transform:translateY(0);opacity:1;}
+  .fw-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;animation:fw-pulse 1.2s infinite;}
+  .fw-dot.orange{background:#f97316;}.fw-dot.red{background:#dc2626;}
+</style>
+<div id="fw-alert-overlay" role="alertdialog" aria-modal="true">
+  <div id="fw-alert-popup">
+    <div class="fw-ph" id="fw-popup-header">
+      <div class="fw-icon" id="fw-popup-icon"></div>
+      <div><h2 id="fw-popup-title">Flood Alert</h2><p id="fw-popup-sub"></p></div>
+    </div>
+    <div class="fw-body" id="fw-popup-body"></div>
+    <div class="fw-foot">
+      <label class="fw-mute"><input type="checkbox" id="fw-mute-cb"> Mute sounds</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="fw-btn fw-btn-dismiss" onclick="fwDismiss()">Dismiss</button>
+        <button class="fw-btn fw-btn-view" id="fw-view-btn" onclick="window.location='/alerts/'">View Alerts →</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="fw-toast" onclick="fwShowPopup()">
+  <span class="fw-dot" id="fw-toast-dot"></span>
+  <span id="fw-toast-text"></span>
+</div>
+<audio id="fw-audio-orange" preload="auto"><source src="{% static 'core/sounds/orange_alert.wav' %}" type="audio/wav"></audio>
+<audio id="fw-audio-red" preload="auto"><source src="{% static 'core/sounds/red_alert.wav' %}" type="audio/wav"></audio>
+<script>
+(function(){
+  const POLL_MS=15000,MUTE_KEY='fw_mute';
+  let currentLevel=null,shownSig=null,dismissed=false,cdTimer=null;
+  const overlay=document.getElementById('fw-alert-overlay'),header=document.getElementById('fw-popup-header'),
+        icon=document.getElementById('fw-popup-icon'),title=document.getElementById('fw-popup-title'),
+        sub=document.getElementById('fw-popup-sub'),body=document.getElementById('fw-popup-body'),
+        viewBtn=document.getElementById('fw-view-btn'),toast=document.getElementById('fw-toast'),
+        toastDot=document.getElementById('fw-toast-dot'),toastText=document.getElementById('fw-toast-text'),
+        muteCb=document.getElementById('fw-mute-cb'),audioO=document.getElementById('fw-audio-orange'),
+        audioR=document.getElementById('fw-audio-red');
+  if(localStorage.getItem(MUTE_KEY)==='1')muteCb.checked=true;
+  muteCb.addEventListener('change',()=>{localStorage.setItem(MUTE_KEY,muteCb.checked?'1':'0');if(muteCb.checked){audioO.pause();audioR.pause();}});
+  function playSound(l){if(muteCb.checked)return;const el=l==='EXTREME'?audioR:audioO;el.currentTime=0;el.volume=0.85;el.play().catch(()=>{document.addEventListener('click',()=>{if(!muteCb.checked){el.currentTime=0;el.play().catch(()=>{});}},{once:true});});}
+  function render(data){
+    const isRed=data.alert_level==='EXTREME',cls=isRed?'red':'orange';
+    header.className='fw-ph '+cls;icon.textContent=isRed?'🔴':'🟠';
+    title.textContent=isRed?'🚨 RED ALERT — Extreme Flood Danger':'⚠️ ORANGE ALERT — High Flood Risk';
+    sub.textContent=isRed?'Immediate action required. Evacuate if instructed.':'Stay alert. Follow official instructions.';
+    viewBtn.className='fw-btn fw-btn-view '+cls;
+    const all=[...data.extreme_alerts,...data.high_alerts];
+    body.innerHTML=all.map(a=>`<div class="fw-item ${a.severity==='EXTREME'?'red':'orange'}"><div class="fw-item-title">${a.title}</div><div class="fw-item-meta"><span>📍 ${a.affected_area}</span><span>🗺️ ${a.district}</span><span>🕐 ${a.issued_at}</span></div></div>`).join('');
+    toastDot.className='fw-dot '+cls;toastText.textContent=isRed?'🔴 Red Alert Active — tap to view':'🟠 Orange Alert Active — tap to view';
+  }
+  window.fwShowPopup=function(data){if(data)render(data);overlay.classList.add('visible');toast.classList.remove('show');playSound(currentLevel);dismissed=false;};
+  window.fwDismiss=function(){overlay.classList.remove('visible');clearInterval(cdTimer);audioO.pause();audioR.pause();dismissed=true;toast.classList.add('show');};
+  function sig(d){return d.alert_level+':'+[...d.extreme_alerts,...d.high_alerts].map(a=>a.id).sort().join(',');}
+  function handle(data){
+    if(!data.alert_level){currentLevel=null;shownSig=null;dismissed=false;overlay.classList.remove('visible');toast.classList.remove('show');return;}
+    currentLevel=data.alert_level;const s=sig(data);
+    if(s!==shownSig){shownSig=s;dismissed=false;fwShowPopup(data);}
+    else if(dismissed){render(data);toast.classList.add('show');}
+    else{render(data);}
+  }
+  async function poll(){try{const res=await fetch('/api/public-alerts/?t='+Date.now());if(res.ok){const data=await res.json();handle(data);}}catch(e){}}
+  poll();setInterval(poll,POLL_MS);
+})();
+</script>
+<!-- ═══ END FLOODWATCH PUBLIC ALERT SYSTEM ═══════════════════════════════════ -->
+</body>
+</html>

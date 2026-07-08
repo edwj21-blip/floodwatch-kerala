@@ -1,0 +1,98 @@
+{% extends 'core/base.html' %}
+{% block title %}Register — FloodWatch Kerala{% endblock %}
+{% block content %}
+<div style="min-height: calc(100vh - 56px); display:flex; align-items:center; justify-content:center; padding:40px 20px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0fdf4 100%);">
+    <div style="width:100%; max-width:480px;">
+        <!-- Header -->
+        <div style="text-align:center; margin-bottom:24px;">
+            <div style="font-size:48px; margin-bottom:10px;">🌊</div>
+            <h1 style="font-family:'Syne',sans-serif; font-size:26px; font-weight:800; color:#0f172a;">Create Account</h1>
+            <p style="color:#64748b; margin-top:6px; font-size:14px;">Join FloodWatch Kerala to report and track flood situations</p>
+        </div>
+
+        <div style="background:white; border:1px solid #e2e8f0; border-radius:18px; padding:28px; box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+            <!-- Info Banner -->
+            <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:10px; padding:12px 16px; margin-bottom:20px; display:flex; align-items:center; gap:10px;">
+                <span style="font-size:20px;">✅</span>
+                <div>
+                    <div style="font-weight:700; font-size:13px; color:#15803d;">Public Registration</div>
+                    <div style="font-size:12px; color:#64748b;">Register to submit flood reports and receive alerts</div>
+                </div>
+            </div>
+
+            {% if messages %}
+            {% for msg in messages %}
+            <div style="background:#fef2f2; border:1px solid #fca5a5; border-radius:10px; padding:11px 14px; margin-bottom:16px; font-size:14px; color:#dc2626;">❌ {{ msg }}</div>
+            {% endfor %}
+            {% endif %}
+
+            <form method="post" action="/register/">
+                {% csrf_token %}
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                    <div class="form-group">
+                        <label class="form-label">First Name</label>
+                        <input type="text" name="first_name" class="form-input" placeholder="First name" value="{{ form_data.first_name|default:'' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" name="last_name" class="form-input" placeholder="Last name" value="{{ form_data.last_name|default:'' }}">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Username <span style="color:#dc2626;">*</span></label>
+                    <input type="text" name="username" class="form-input" placeholder="Choose a username" required value="{{ form_data.username|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" name="email" class="form-input" placeholder="your@email.com (optional)" value="{{ form_data.email|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phone Number</label>
+                    <input type="tel" name="phone" class="form-input" placeholder="+91 XXXXX XXXXX" value="{{ form_data.phone|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">District</label>
+                    <select name="district" class="form-input">
+                        <option value="">Select your district</option>
+                        <option value="Thiruvananthapuram">Thiruvananthapuram</option>
+                        <option value="Kollam">Kollam</option>
+                        <option value="Pathanamthitta">Pathanamthitta</option>
+                        <option value="Alappuzha">Alappuzha</option>
+                        <option value="Kottayam">Kottayam</option>
+                        <option value="Idukki">Idukki</option>
+                        <option value="Ernakulam">Ernakulam</option>
+                        <option value="Thrissur">Thrissur</option>
+                        <option value="Palakkad">Palakkad</option>
+                        <option value="Malappuram">Malappuram</option>
+                        <option value="Kozhikode">Kozhikode</option>
+                        <option value="Wayanad">Wayanad</option>
+                        <option value="Kannur">Kannur</option>
+                        <option value="Kasaragod">Kasaragod</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password <span style="color:#dc2626;">*</span></label>
+                    <input type="password" name="password1" class="form-input" placeholder="Create a strong password" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Confirm Password <span style="color:#dc2626;">*</span></label>
+                    <input type="password" name="password2" class="form-input" placeholder="Repeat your password" required>
+                </div>
+                <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:10px 14px; margin-bottom:16px; font-size:12px; color:#1e40af;">
+                    🔒 Your data is safe. We only use it for flood alert notifications.
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg" style="width:100%; justify-content:center;">
+                    ✅ Create Account
+                </button>
+            </form>
+            <p style="text-align:center; margin-top:16px; font-size:13px; color:#64748b;">
+                Already have an account?
+                <a href="/login/" style="color:#0369a1; font-weight:600; text-decoration:none;">Sign in →</a>
+            </p>
+        </div>
+        <p style="text-align:center; margin-top:14px; font-size:13px; color:#64748b;">
+            <a href="/" style="color:#0369a1; text-decoration:none;">← Back to Dashboard</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

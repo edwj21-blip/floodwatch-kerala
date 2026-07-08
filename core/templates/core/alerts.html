@@ -1,0 +1,110 @@
+{% extends 'core/base.html' %}
+{% block title %}Flood Alerts — FloodWatch Kerala{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(135deg, #fff5f5, #fef2f2);
+    border-bottom: 1px solid rgba(239,68,68,0.3);
+    padding: 40px 0;
+}
+.page-header h1 { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; }
+.alert-full-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 24px;
+    border-left: 5px solid; margin-bottom: 16px;
+    transition: transform 0.2s;
+}
+.alert-full-card:hover { transform: translateX(4px); }
+.alert-full-card.sev-LOW { border-left-color: var(--safe); }
+.alert-full-card.sev-MEDIUM { border-left-color: var(--watch); }
+.alert-full-card.sev-HIGH { border-left-color: var(--danger); }
+.alert-full-card.sev-EXTREME { border-left-color: var(--critical); }
+.filter-bar {
+    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px;
+}
+.filter-btn {
+    padding: 6px 14px; border-radius: 20px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--border); background: var(--card);
+    color: #64748b; text-decoration: none; transition: all 0.2s;
+}
+.filter-btn:hover, .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+.filter-btn.extreme { border-color: var(--critical); }
+.filter-btn.extreme.active, .filter-btn.extreme:hover { background: var(--critical); border-color: var(--critical); }
+.filter-btn.high { border-color: var(--danger); }
+.filter-btn.high.active, .filter-btn.high:hover { background: var(--danger); border-color: var(--danger); }
+.inactive-tag { font-size:11px; background: #f8fafc; color: #64748b; padding: 2px 8px; border-radius: 10px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+            <a href="/" style="color:var(--text-muted); text-decoration:none; font-size:14px;">← Dashboard</a>
+        </div>
+        <h1>🚨 Flood Alerts</h1>
+        <p style="color:var(--text-muted); margin-top:8px;">All flood warnings and advisories issued for Kerala</p>
+    </div>
+</div>
+
+<div class="container page-body">
+    <!-- Filters -->
+    <div class="filter-bar">
+        <a href="/alerts/" class="filter-btn {% if not selected_severity %}active{% endif %}">All Alerts</a>
+        <a href="?severity=LOW" class="filter-btn {% if selected_severity == 'LOW' %}active{% endif %}">🟢 Low</a>
+        <a href="?severity=MEDIUM" class="filter-btn {% if selected_severity == 'MEDIUM' %}active{% endif %}">🟡 Medium</a>
+        <a href="?severity=HIGH" class="filter-btn high {% if selected_severity == 'HIGH' %}active{% endif %}">🔴 High</a>
+        <a href="?severity=EXTREME" class="filter-btn extreme {% if selected_severity == 'EXTREME' %}active{% endif %}">🟣 Extreme</a>
+    </div>
+
+    <!-- District filter -->
+    {% if districts %}
+    <div style="margin-bottom:24px;">
+        <form method="get" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <input type="hidden" name="severity" value="{{ selected_severity }}">
+            <select name="district" class="form-input" style="max-width:220px;" onchange="this.form.submit()">
+                <option value="">All Districts</option>
+                {% for d in districts %}
+                <option value="{{ d }}" {% if selected_district == d %}selected{% endif %}>{{ d }}</option>
+                {% endfor %}
+            </select>
+            <span style="font-size:13px; color:var(--text-muted);">{{ alerts.count }} alert{{ alerts.count|pluralize }} found</span>
+        </form>
+    </div>
+    {% endif %}
+
+    {% if alerts %}
+        {% for alert in alerts %}
+        <div class="alert-full-card sev-{{ alert.severity }}">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <span class="badge badge-{{ alert.severity|lower }}">{{ alert.severity }}</span>
+                    {% if not alert.is_active %}<span class="inactive-tag">Inactive</span>{% endif %}
+                </div>
+                <span style="font-size:12px; color:var(--text-muted);">{{ alert.issued_at|date:"d M Y, g:i A" }}</span>
+            </div>
+            <h3 style="font-size:18px; font-weight:700; margin-bottom:8px;">{{ alert.title }}</h3>
+            <div style="display:flex; gap:16px; margin-bottom:12px; flex-wrap:wrap; font-size:13px; color:var(--text-muted);">
+                <span>📍 {{ alert.affected_area }}</span>
+                <span>🗺️ {{ alert.district }}</span>
+                {% if alert.issued_by %}<span>👤 {{ alert.issued_by.get_full_name|default:alert.issued_by.username }}</span>{% endif %}
+            </div>
+            <p style="color:var(--text-dim); line-height:1.7; font-size:14px;">{{ alert.description }}</p>
+            {% if alert.expires_at %}
+            <div style="margin-top:12px; font-size:12px; color:var(--text-muted);">
+                ⏰ Expires: {{ alert.expires_at|date:"d M Y, g:i A" }}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+    <div class="card" style="text-align:center; padding:60px 20px;">
+        <div style="font-size:48px; margin-bottom:16px;">✅</div>
+        <h3 style="font-size:20px; margin-bottom:8px;">No Alerts Found</h3>
+        <p style="color:var(--text-muted);">No flood alerts match your current filters.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

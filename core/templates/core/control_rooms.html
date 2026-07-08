@@ -1,0 +1,418 @@
+{% extends 'core/base.html' %}
+{% block title %}Control Rooms — FloodWatch Kerala{% endblock %}
+{% block extra_css %}
+<style>
+.district-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 20px; }
+.district-card {
+    background: white; border: 1px solid #e2e8f0;
+    border-radius: 16px; overflow: hidden;
+    transition: all 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.district-card:hover { border-color: #0369a1; box-shadow: 0 4px 20px rgba(3,105,161,0.12); transform: translateY(-2px); }
+.district-header {
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border-bottom: 1px solid #bae6fd;
+    display: flex; align-items: center; gap: 12px;
+}
+.district-icon { font-size: 28px; }
+.district-name { font-family:'Syne',sans-serif; font-size:17px; font-weight:800; color:#0f172a; }
+.district-sub { font-size:12px; color:#64748b; }
+.district-body { padding: 16px 20px; }
+.contact-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid #f1f5f9;
+    gap: 12px;
+}
+.contact-row:last-child { border-bottom: none; }
+.contact-label { font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+.contact-name { font-size: 14px; font-weight: 600; color: #0f172a; }
+.contact-role { font-size: 11px; color: #0369a1; font-weight: 500; }
+.call-btn {
+    background: #eff6ff; border: 1px solid #bfdbfe;
+    color: #1d4ed8; padding: 6px 14px; border-radius: 8px;
+    text-decoration: none; font-size: 13px; font-weight: 700;
+    transition: all 0.2s; white-space: nowrap; flex-shrink: 0;
+}
+.call-btn:hover { background: #0369a1; color: white; border-color: #0369a1; }
+.emg-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 32px; }
+.emg-pill {
+    background: white; border: 1px solid #fecaca; border-radius: 14px;
+    padding: 16px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    transition: all 0.2s;
+}
+.emg-pill:hover { border-color: #dc2626; box-shadow: 0 4px 16px rgba(220,38,38,0.12); transform: translateY(-2px); }
+.emg-num { font-family:'Syne',sans-serif; font-size:30px; font-weight:800; color:#dc2626; }
+.emg-name { font-size:12px; color:#64748b; margin-top:2px; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <a href="/" style="color:#64748b; text-decoration:none; font-size:13px;">← Dashboard</a>
+        <h1 style="margin-top:10px;">📡 District Control Rooms</h1>
+        <p style="color:#64748b; margin-top:6px; font-size:14px;">All 14 districts of Kerala — Control room contacts &amp; rescue information</p>
+    </div>
+</div>
+
+<div class="container page-body">
+
+    <!-- Emergency Helplines -->
+    <div class="section-header">
+        <h2 class="section-title">🆘 Emergency <span>Helplines</span></h2>
+    </div>
+    <div class="emg-strip">
+        <div class="emg-pill"><a href="tel:1077" style="text-decoration:none;"><div class="emg-num">1077</div><div class="emg-name">Kerala Disaster Helpline</div></a></div>
+        <div class="emg-pill"><a href="tel:112" style="text-decoration:none;"><div class="emg-num">112</div><div class="emg-name">National Emergency</div></a></div>
+        <div class="emg-pill"><a href="tel:101" style="text-decoration:none;"><div class="emg-num" style="color:#d97706;">101</div><div class="emg-name">Fire &amp; Rescue</div></a></div>
+        <div class="emg-pill"><a href="tel:100" style="text-decoration:none;"><div class="emg-num" style="color:#d97706;">100</div><div class="emg-name">Police</div></a></div>
+        <div class="emg-pill"><a href="tel:104" style="text-decoration:none;"><div class="emg-num" style="color:#16a34a;">104</div><div class="emg-name">Medical Helpline</div></a></div>
+        <div class="emg-pill"><a href="tel:1800425100" style="text-decoration:none;"><div class="emg-num" style="font-size:18px; padding-top:6px; color:#7c3aed;">SDMA</div><div class="emg-name">1800-425-1077 (Toll Free)</div></a></div>
+    </div>
+
+    <!-- All 14 Districts -->
+    <div class="section-header">
+        <h2 class="section-title">🏛️ All <span>14 Districts</span> — Control Rooms</h2>
+    </div>
+
+    <div class="district-grid">
+
+        <!-- 1. Thiruvananthapuram -->
+        <div class="district-card">
+            <div class="district-header">
+                <div class="district-icon">🏙️</div>
+                <div><div class="district-name">Thiruvananthapuram</div><div class="district-sub">State Capital District</div></div>
+            </div>
+            <div class="district-body">
+                <div class="contact-row">
+                    <div><div class="contact-label">Control Room</div><div class="contact-name">District Collector Office</div><div class="contact-role">Disaster Management Cell</div></div>
+                    <a href="tel:04712730600" class="call-btn">📞 0471-2730600</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">District EOC</div><div class="contact-name">Emergency Operations Centre</div><div class="contact-role">24×7 Active</div></div>
+                    <a href="tel:04712331798" class="call-btn">📞 0471-2331798</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">Fire &amp; Rescue</div><div class="contact-name">Fire Station — TVM Central</div><div class="contact-role">Thiruvananthapuram</div></div>
+                    <a href="tel:04712473101" class="call-btn">📞 0471-2473101</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Kollam -->
+        <div class="district-card">
+            <div class="district-header">
+                <div class="district-icon">⚓</div>
+                <div><div class="district-name">Kollam</div><div class="district-sub">Cashew Capital of the World</div></div>
+            </div>
+            <div class="district-body">
+                <div class="contact-row">
+                    <div><div class="contact-label">Control Room</div><div class="contact-name">District Collector Office</div><div class="contact-role">Disaster Management Cell</div></div>
+                    <a href="tel:04742794500" class="call-btn">📞 0474-2794500</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">District EOC</div><div class="contact-name">Emergency Operations Centre</div><div class="contact-role">24×7 Active</div></div>
+                    <a href="tel:04742746596" class="call-btn">📞 0474-2746596</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">Fire &amp; Rescue</div><div class="contact-name">Fire Station — Kollam</div><div class="contact-role">Kollam District</div></div>
+                    <a href="tel:04742742101" class="call-btn">📞 0474-2742101</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Pathanamthitta -->
+        <div class="district-card">
+            <div class="district-header">
+                <div class="district-icon">⛪</div>
+                <div><div class="district-name">Pathanamthitta</div><div class="district-sub">Pilgrim's Capital</div></div>
+            </div>
+            <div class="district-body">
+                <div class="contact-row">
+                    <div><div class="contact-label">Control Room</div><div class="contact-name">District Collector Office</div><div class="contact-role">Disaster Management Cell</div></div>
+                    <a href="tel:04682322250" class="call-btn">📞 0468-2322250</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">District EOC</div><div class="contact-name">Emergency Operations Centre</div><div class="contact-role">24×7 Active</div></div>
+                    <a href="tel:04682323300" class="call-btn">📞 0468-2323300</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">Fire &amp; Rescue</div><div class="contact-name">Fire Station — Pathanamthitta</div><div class="contact-role">Pathanamthitta District</div></div>
+                    <a href="tel:04682222101" class="call-btn">📞 0468-2222101</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Alappuzha -->
+        <div class="district-card">
+            <div class="district-header">
+                <div class="district-icon">🚣</div>
+                <div><div class="district-name">Alappuzha</div><div class="district-sub">Venice of the East</div></div>
+            </div>
+            <div class="district-body">
+                <div class="contact-row">
+                    <div><div class="contact-label">Control Room</div><div class="contact-name">District Collector Office</div><div class="contact-role">Disaster Management Cell</div></div>
+                    <a href="tel:04772251557" class="call-btn">📞 0477-2251557</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">District EOC</div><div class="contact-name">Emergency Operations Centre</div><div class="contact-role">24×7 Active (High Flood Risk)</div></div>
+                    <a href="tel:04772252575" class="call-btn">📞 0477-2252575</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">Fire &amp; Rescue</div><div class="contact-name">Fire Station — Alappuzha</div><div class="contact-role">Alappuzha District</div></div>
+                    <a href="tel:04772243101" class="call-btn">📞 0477-2243101</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Kottayam -->
+        <div class="district-card">
+            <div class="district-header">
+                <div class="district-icon">📚</div>
+                <div><div class="district-name">Kottayam</div><div class="district-sub">Land of Letters, Latex &amp; Lakes</div></div>
+            </div>
+            <div class="district-body">
+                <div class="contact-row">
+                    <div><div class="contact-label">Control Room</div><div class="contact-name">District Collector Office</div><div class="contact-role">Disaster Management Cell</div></div>
+                    <a href="tel:04812563430" class="call-btn">📞 0481-2563430</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">District EOC</div><div class="contact-name">Emergency Operations Centre</div><div class="contact-role">24×7 Active</div></div>
+                    <a href="tel:04812560987" class="call-btn">📞 0481-2560987</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">Fire &amp; Rescue</div><div class="contact-name">Fire Station — Kottayam</div><div class="contact-role">Kottayam District</div></div>
+                    <a href="tel:04812562101" class="call-btn">📞 0481-2562101</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. Idukki -->
+        <div class="district-card">
+            <div class="district-header">
+                <div class="district-icon">🏔️</div>
+                <div><div class="district-name">Idukki</div><div class="district-sub">The Hilly Treasure</div></div>
+            </div>
+            <div class="district-body">
+                <div class="contact-row">
+                    <div><div class="contact-label">Control Room</div><div class="contact-name">District Collector Office</div><div class="contact-role">Disaster Management Cell</div></div>
+                    <a href="tel:04862232218" class="call-btn">📞 0486-2232218</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">District EOC</div><div class="contact-name">Emergency Operations Centre</div><div class="contact-role">24×7 Active (Landslide Zone)</div></div>
+                    <a href="tel:04862233900" class="call-btn">📞 0486-2233900</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">Fire &amp; Rescue</div><div class="contact-name">Fire Station — Thodupuzha</div><div class="contact-role">Idukki District</div></div>
+                    <a href="tel:04862222101" class="call-btn">📞 0486-2222101</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. Ernakulam -->
+        <div class="district-card">
+            <div class="district-header">
+                <div class="district-icon">🌆</div>
+                <div><div class="district-name">Ernakulam</div><div class="district-sub">Commercial Capital of Kerala</div></div>
+            </div>
+            <div class="district-body">
+                <div class="contact-row">
+                    <div><div class="contact-label">Control Room</div><div class="contact-name">District Collector Office</div><div class="contact-role">Disaster Management Cell</div></div>
+                    <a href="tel:04842421976" class="call-btn">📞 0484-2421976</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">District EOC</div><div class="contact-name">Emergency Operations Centre</div><div class="contact-role">24×7 Active</div></div>
+                    <a href="tel:04842422000" class="call-btn">📞 0484-2422000</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">Fire &amp; Rescue</div><div class="contact-name">Fire Station — Ernakulam</div><div class="contact-role">Ernakulam District</div></div>
+                    <a href="tel:04842361101" class="call-btn">📞 0484-2361101</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. Thrissur -->
+        <div class="district-card">
+            <div class="district-header">
+                <div class="district-icon">🎭</div>
+                <div><div class="district-name">Thrissur</div><div class="district-sub">Cultural Capital of Kerala</div></div>
+            </div>
+            <div class="district-body">
+                <div class="contact-row">
+                    <div><div class="contact-label">Control Room</div><div class="contact-name">District Collector Office</div><div class="contact-role">Disaster Management Cell</div></div>
+                    <a href="tel:04872362424" class="call-btn">📞 0487-2362424</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">District EOC</div><div class="contact-name">Emergency Operations Centre</div><div class="contact-role">24×7 Active</div></div>
+                    <a href="tel:04872360800" class="call-btn">📞 0487-2360800</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">Fire &amp; Rescue</div><div class="contact-name">Fire Station — Thrissur</div><div class="contact-role">Thrissur District</div></div>
+                    <a href="tel:04872423101" class="call-btn">📞 0487-2423101</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 9. Palakkad -->
+        <div class="district-card">
+            <div class="district-header">
+                <div class="district-icon">🌾</div>
+                <div><div class="district-name">Palakkad</div><div class="district-sub">Gateway to Kerala</div></div>
+            </div>
+            <div class="district-body">
+                <div class="contact-row">
+                    <div><div class="contact-label">Control Room</div><div class="contact-name">District Collector Office</div><div class="contact-role">Disaster Management Cell</div></div>
+                    <a href="tel:04912505300" class="call-btn">📞 0491-2505300</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">District EOC</div><div class="contact-name">Emergency Operations Centre</div><div class="contact-role">24×7 Active</div></div>
+                    <a href="tel:04912506100" class="call-btn">📞 0491-2506100</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">Fire &amp; Rescue</div><div class="contact-name">Fire Station — Palakkad</div><div class="contact-role">Palakkad District</div></div>
+                    <a href="tel:04912524101" class="call-btn">📞 0491-2524101</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 10. Malappuram -->
+        <div class="district-card">
+            <div class="district-header">
+                <div class="district-icon">🕌</div>
+                <div><div class="district-name">Malappuram</div><div class="district-sub">Land of Hills &amp; Valleys</div></div>
+            </div>
+            <div class="district-body">
+                <div class="contact-row">
+                    <div><div class="contact-label">Control Room</div><div class="contact-name">District Collector Office</div><div class="contact-role">Disaster Management Cell</div></div>
+                    <a href="tel:04832736300" class="call-btn">📞 0483-2736300</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">District EOC</div><div class="contact-name">Emergency Operations Centre</div><div class="contact-role">24×7 Active</div></div>
+                    <a href="tel:04832734900" class="call-btn">📞 0483-2734900</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">Fire &amp; Rescue</div><div class="contact-name">Fire Station — Malappuram</div><div class="contact-role">Malappuram District</div></div>
+                    <a href="tel:04832761101" class="call-btn">📞 0483-2761101</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 11. Kozhikode -->
+        <div class="district-card">
+            <div class="district-header">
+                <div class="district-icon">🌊</div>
+                <div><div class="district-name">Kozhikode</div><div class="district-sub">City of Spices (Calicut)</div></div>
+            </div>
+            <div class="district-body">
+                <div class="contact-row">
+                    <div><div class="contact-label">Control Room</div><div class="contact-name">District Collector Office</div><div class="contact-role">Disaster Management Cell</div></div>
+                    <a href="tel:04952371471" class="call-btn">📞 0495-2371471</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">District EOC</div><div class="contact-name">Emergency Operations Centre</div><div class="contact-role">24×7 Active</div></div>
+                    <a href="tel:04952371700" class="call-btn">📞 0495-2371700</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">Fire &amp; Rescue</div><div class="contact-name">Fire Station — Kozhikode</div><div class="contact-role">Kozhikode District</div></div>
+                    <a href="tel:04952722101" class="call-btn">📞 0495-2722101</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 12. Wayanad -->
+        <div class="district-card">
+            <div class="district-header">
+                <div class="district-icon">🌿</div>
+                <div><div class="district-name">Wayanad</div><div class="district-sub">Land of Forests &amp; Tribes</div></div>
+            </div>
+            <div class="district-body">
+                <div class="contact-row">
+                    <div><div class="contact-label">Control Room</div><div class="contact-name">District Collector Office</div><div class="contact-role">Disaster Management Cell</div></div>
+                    <a href="tel:04936202503" class="call-btn">📞 0493-6202503</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">District EOC</div><div class="contact-name">Emergency Operations Centre</div><div class="contact-role">24×7 Active (Landslide Alert)</div></div>
+                    <a href="tel:04936204100" class="call-btn">📞 0493-6204100</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">Fire &amp; Rescue</div><div class="contact-name">Fire Station — Kalpetta</div><div class="contact-role">Wayanad District</div></div>
+                    <a href="tel:04936202101" class="call-btn">📞 0493-6202101</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 13. Kannur -->
+        <div class="district-card">
+            <div class="district-header">
+                <div class="district-icon">🏰</div>
+                <div><div class="district-name">Kannur</div><div class="district-sub">Land of Looms &amp; Lores</div></div>
+            </div>
+            <div class="district-body">
+                <div class="contact-row">
+                    <div><div class="contact-label">Control Room</div><div class="contact-name">District Collector Office</div><div class="contact-role">Disaster Management Cell</div></div>
+                    <a href="tel:04972706300" class="call-btn">📞 0497-2706300</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">District EOC</div><div class="contact-name">Emergency Operations Centre</div><div class="contact-role">24×7 Active</div></div>
+                    <a href="tel:04972707800" class="call-btn">📞 0497-2707800</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">Fire &amp; Rescue</div><div class="contact-name">Fire Station — Kannur</div><div class="contact-role">Kannur District</div></div>
+                    <a href="tel:04972762101" class="call-btn">📞 0497-2762101</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 14. Kasaragod -->
+        <div class="district-card">
+            <div class="district-header">
+                <div class="district-icon">🏯</div>
+                <div><div class="district-name">Kasaragod</div><div class="district-sub">Land of Forts &amp; Rivers</div></div>
+            </div>
+            <div class="district-body">
+                <div class="contact-row">
+                    <div><div class="contact-label">Control Room</div><div class="contact-name">District Collector Office</div><div class="contact-role">Disaster Management Cell</div></div>
+                    <a href="tel:04994257100" class="call-btn">📞 0499-4257100</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">District EOC</div><div class="contact-name">Emergency Operations Centre</div><div class="contact-role">24×7 Active</div></div>
+                    <a href="tel:04994256600" class="call-btn">📞 0499-4256600</a>
+                </div>
+                <div class="contact-row">
+                    <div><div class="contact-label">Fire &amp; Rescue</div><div class="contact-name">Fire Station — Kasaragod</div><div class="contact-role">Kasaragod District</div></div>
+                    <a href="tel:04994220101" class="call-btn">📞 0499-4220101</a>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- end district-grid -->
+
+    <!-- NDRF Info -->
+    <div style="margin-top:40px; background:white; border:1px solid #e2e8f0; border-radius:16px; padding:24px; box-shadow:0 1px 4px rgba(0,0,0,0.04);">
+        <h3 style="font-family:'Syne',sans-serif; font-size:18px; font-weight:800; margin-bottom:16px; color:#0f172a;">🛡️ State &amp; National Response Teams</h3>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:16px;">
+            <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:12px; padding:16px;">
+                <div style="font-weight:700; font-size:14px; color:#15803d; margin-bottom:4px;">Kerala SDMA</div>
+                <div style="font-size:13px; color:#64748b; margin-bottom:8px;">State Disaster Management Authority</div>
+                <a href="tel:18004251077" style="color:#15803d; font-weight:700; text-decoration:none;">📞 1800-425-1077 (Toll Free)</a>
+            </div>
+            <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:16px;">
+                <div style="font-weight:700; font-size:14px; color:#1d4ed8; margin-bottom:4px;">NDRF — 9th Battalion Arakkonam</div>
+                <div style="font-size:13px; color:#64748b; margin-bottom:8px;">National Disaster Response Force</div>
+                <a href="tel:01126701700" style="color:#1d4ed8; font-weight:700; text-decoration:none;">📞 011-26701700</a>
+            </div>
+            <div style="background:#faf5ff; border:1px solid #c4b5fd; border-radius:12px; padding:16px;">
+                <div style="font-weight:700; font-size:14px; color:#7c3aed; margin-bottom:4px;">Kerala Fire &amp; Rescue HQ</div>
+                <div style="font-size:13px; color:#64748b; margin-bottom:8px;">Thiruvananthapuram Headquarters</div>
+                <a href="tel:04712721333" style="color:#7c3aed; font-weight:700; text-decoration:none;">📞 0471-2721333</a>
+            </div>
+            <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:12px; padding:16px;">
+                <div style="font-weight:700; font-size:14px; color:#92400e; margin-bottom:4px;">Indian Coast Guard — Kerala</div>
+                <div style="font-size:13px; color:#64748b; margin-bottom:8px;">Maritime Search &amp; Rescue</div>
+                <a href="tel:04842666600" style="color:#92400e; font-weight:700; text-decoration:none;">📞 0484-2666600</a>
+            </div>
+        </div>
+    </div>
+
+</div><!-- end container -->
+{% endblock %}

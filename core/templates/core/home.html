@@ -1,0 +1,364 @@
+{% extends 'core/base.html' %}
+{% block title %}FloodWatch Kerala — Flood Alert Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+.hero {
+    background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #f0fdf4 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 0 36px;
+    position: relative; overflow: hidden;
+}
+.hero::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at 30% 50%, rgba(14,165,233,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(99,102,241,0.06) 0%, transparent 50%);
+    pointer-events: none;
+}
+.hero-content { position: relative; }
+.hero-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 42px; font-weight: 800; line-height: 1.1;
+    margin-bottom: 12px;
+}
+.hero-title span { color: var(--primary); }
+.hero-subtitle { color: var(--text-dim); font-size: 16px; max-width: 540px; line-height: 1.6; }
+.hero-actions { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px; margin-top: 32px;
+}
+@media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 500px) { .stats-grid { grid-template-columns: 1fr; } }
+
+.stat-alert { border-color: rgba(239,68,68,0.3); }
+.stat-alert .stat-icon { background: rgba(239,68,68,0.15); }
+.stat-warn { border-color: rgba(249,115,22,0.3); }
+.stat-warn .stat-icon { background: rgba(249,115,22,0.15); }
+.stat-blue { border-color: rgba(14,165,233,0.3); }
+.stat-blue .stat-icon { background: rgba(14,165,233,0.15); }
+.stat-green { border-color: rgba(34,197,94,0.3); }
+.stat-green .stat-icon { background: rgba(34,197,94,0.15); }
+
+/* Alert cards */
+.alert-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px;
+    border-left: 4px solid;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.alert-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+.alert-card.sev-LOW { border-left-color: var(--safe); }
+.alert-card.sev-MEDIUM { border-left-color: var(--watch); }
+.alert-card.sev-HIGH { border-left-color: var(--danger); }
+.alert-card.sev-EXTREME { border-left-color: var(--critical); }
+.alert-title { font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+.alert-area { color: #64748b; font-size: 13px; margin-bottom: 10px; }
+.alert-meta { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #64748b; }
+
+/* Water level monitor */
+.wl-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px;
+    transition: border-color 0.2s;
+}
+.wl-card:hover { border-color: var(--primary); }
+.wl-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.wl-name { font-weight: 700; font-size: 14px; }
+.wl-district { font-size: 12px; color: #64748b; }
+.wl-levels { display: flex; gap: 16px; margin-bottom: 10px; font-size: 12px; }
+.wl-val { text-align: center; }
+.wl-val-num { font-size: 20px; font-weight: 800; font-family: 'Syne', sans-serif; }
+.wl-val-label { color: #64748b; }
+
+/* Report cards */
+.report-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px;
+    display: flex; gap: 14px; align-items: flex-start;
+}
+.report-photo {
+    width: 72px; height: 72px; border-radius: 10px;
+    object-fit: cover; flex-shrink: 0;
+    border: 1px solid var(--border);
+}
+.report-no-photo {
+    width: 72px; height: 72px; border-radius: 10px;
+    background: white; display: flex; align-items: center;
+    justify-content: center; font-size: 28px; flex-shrink: 0;
+    border: 1px solid var(--border);
+}
+.report-info { flex: 1; min-width: 0; }
+.report-location { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.report-desc { font-size: 12px; color: #64748b; margin: 4px 0 8px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.report-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* Rescue team cards */
+.team-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px;
+    display: flex; flex-direction: column; gap: 12px;
+}
+.team-header { display: flex; gap: 12px; align-items: flex-start; }
+.team-icon { font-size: 28px; }
+.team-name { font-weight: 700; font-size: 15px; }
+.team-type { font-size: 12px; color: var(--primary); font-weight: 600; }
+.team-contact { display: flex; align-items: center; gap: 8px; }
+.team-phone {
+    background: white; border: 1px solid var(--border);
+    color: white; padding: 8px 14px; border-radius: 8px;
+    font-size: 14px; font-weight: 600; text-decoration: none;
+    display: flex; align-items: center; gap: 6px;
+    transition: border-color 0.2s;
+}
+.team-phone:hover { border-color: var(--primary); color: var(--primary); }
+.team-avail {
+    padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+}
+.avail-yes { background: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
+.avail-no { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }
+
+.section-divider { height: 1px; background: var(--border); margin: 40px 0; }
+.view-all { font-size: 13px; color: var(--primary); text-decoration: none; font-weight: 600; }
+.view-all:hover { text-decoration: underline; }
+
+.empty-state { text-align: center; padding: 40px 20px; color: #64748b; }
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+
+.emergency-banner {
+    background: linear-gradient(90deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05));
+    border: 1px solid rgba(239,68,68,0.4);
+    border-radius: 12px; padding: 16px 20px;
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 28px;
+}
+.emergency-number {
+    font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; color: var(--danger);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero">
+    <div class="container hero-content">
+        <h1 class="hero-title">Kerala <span>FloodWatch</span><br>Early Warning System</h1>
+        <p class="hero-subtitle">Real-time flood monitoring, community reporting, and disaster response coordination for Kerala.</p>
+        <div class="hero-actions">
+            <a href="/report/" class="btn btn-danger btn-lg">⚠️ Report a Flood Incident</a>
+            <a href="/water-levels/" class="btn btn-ghost btn-lg">📊 View Water Levels</a>
+            <a href="/alerts/" class="btn btn-ghost btn-lg">🚨 Active Alerts</a>
+        </div>
+    </div>
+</div>
+
+<div class="container page-body">
+
+    <!-- Emergency Banner -->
+    <div class="emergency-banner">
+        <div style="font-size: 28px;">🆘</div>
+        <div>
+            <div style="font-size: 13px; color: #64748b; font-weight: 600;">KERALA DISASTER MANAGEMENT HELPLINE</div>
+            <div class="emergency-number">1077 &nbsp;|&nbsp; 0471-2331639</div>
+        </div>
+        <div style="margin-left: auto; font-size: 12px; color: #64748b;">24/7 Emergency Response</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+        <div class="stat-card stat-alert">
+            <div class="stat-icon">🚨</div>
+            <div>
+                <div class="stat-num" style="color: var(--danger);">{{ stats.active_alerts }}</div>
+                <div class="stat-label">Active Alerts</div>
+            </div>
+        </div>
+        <div class="stat-card stat-warn">
+            <div class="stat-icon">⚠️</div>
+            <div>
+                <div class="stat-num" style="color: var(--warning);">{{ stats.critical_zones }}</div>
+                <div class="stat-label">Critical Zones</div>
+            </div>
+        </div>
+        <div class="stat-card stat-blue">
+            <div class="stat-icon">📋</div>
+            <div>
+                <div class="stat-num" style="color: var(--primary);">{{ stats.reports_today }}</div>
+                <div class="stat-label">Reports Today</div>
+            </div>
+        </div>
+        <div class="stat-card stat-green">
+            <div class="stat-icon">🚁</div>
+            <div>
+                <div class="stat-num" style="color: var(--safe);">{{ stats.rescue_teams }}</div>
+                <div class="stat-label">Rescue Teams Ready</div>
+            </div>
+        </div>
+        <div class="stat-card stat-blue">
+            <div class="stat-icon">🏠</div>
+            <div>
+                <div class="stat-num" style="color: #f59e0b;">{{ stats.displaced_persons }}</div>
+                <div class="stat-label">Displaced Persons</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- Active Alerts -->
+    <div class="section-header">
+        <h2 class="section-title">🚨 Active <span>Flood Alerts</span></h2>
+        <a href="/alerts/" class="view-all">View all alerts →</a>
+    </div>
+
+    {% if alerts %}
+    <div class="grid-2">
+        {% for alert in alerts %}
+        <div class="alert-card sev-{{ alert.severity }}">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                <span class="badge badge-{{ alert.severity|lower }}">{{ alert.severity }}</span>
+                <span style="font-size:12px; color:var(--text-muted);">{{ alert.issued_at|date:"d M, g:i A" }}</span>
+            </div>
+            <div class="alert-title">{{ alert.title }}</div>
+            <div class="alert-area">📍 {{ alert.affected_area }}, {{ alert.district }}</div>
+            <p style="font-size:13px; color:var(--text-dim); line-height:1.5;">{{ alert.description|truncatewords:20 }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state card">
+        <div class="empty-icon">✅</div>
+        <div>No active alerts at this time</div>
+    </div>
+    {% endif %}
+
+    <div class="section-divider"></div>
+
+    <!-- Water Levels -->
+    <div class="section-header">
+        <h2 class="section-title">📊 Water Level <span>Monitoring</span></h2>
+        <a href="/water-levels/" class="view-all">View all stations →</a>
+    </div>
+
+    {% if water_levels %}
+    <div class="grid-3" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+        {% for level in water_levels %}
+        <div class="wl-card">
+            <div class="wl-header">
+                <div>
+                    <div class="wl-name">{{ level.location_name }}</div>
+                    <div class="wl-district">📍 {{ level.district }}</div>
+                </div>
+                <span class="badge badge-{{ level.status|lower }}">{{ level.status }}</span>
+            </div>
+            <div class="wl-levels">
+                <div class="wl-val">
+                    <div class="wl-val-num" style="color:{% if level.status == 'CRITICAL' %}var(--critical){% elif level.status == 'DANGER' %}var(--danger){% elif level.status == 'WARNING' %}var(--warning){% elif level.status == 'WATCH' %}var(--watch){% else %}var(--safe){% endif %};">{{ level.current_level_meters }}m</div>
+                    <div class="wl-val-label">Current</div>
+                </div>
+                <div style="border-left:1px solid var(--border); margin: 4px 0;"></div>
+                <div class="wl-val">
+                    <div class="wl-val-num" style="color:var(--text-muted); font-size:16px;">{{ level.danger_level_meters }}m</div>
+                    <div class="wl-val-label">Danger</div>
+                </div>
+                <div style="border-left:1px solid var(--border); margin: 4px 0;"></div>
+                <div class="wl-val">
+                    <div class="wl-val-num" style="color:var(--text-muted); font-size:16px;">{{ level.get_percentage }}%</div>
+                    <div class="wl-val-label">Filled</div>
+                </div>
+            </div>
+            <div class="level-bar-wrap">
+                <div class="level-bar-fill" style="width:{{ level.get_percentage }}%;
+                    background:{% if level.get_percentage >= 100 %}var(--critical){% elif level.get_percentage >= 85 %}var(--danger){% elif level.get_percentage >= 60 %}var(--warning){% elif level.get_percentage >= 40 %}var(--watch){% else %}var(--safe){% endif %};"></div>
+            </div>
+            {% if level.rainfall_mm > 0 %}
+            <div style="font-size:11px; color:var(--primary); margin-top:6px; font-weight:600;">
+                🌧️ {{ level.rainfall_mm }} mm/hr &nbsp;·&nbsp; {{ level.weather_description }}
+            </div>
+            {% endif %}
+            <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Updated {{ level.last_updated|timesince }} ago</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state card"><div class="empty-icon">📊</div><div>No water level data available</div></div>
+    {% endif %}
+
+    <div class="section-divider"></div>
+
+    <!-- Recent Reports -->
+    <div class="section-header">
+        <h2 class="section-title">📋 Community <span>Reports</span></h2>
+        <a href="/report/" class="view-all">+ Submit Report</a>
+    </div>
+
+    {% if recent_reports %}
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+        {% for report in recent_reports %}
+        <div class="report-card">
+            {% if report.photo %}
+            <img src="{{ report.photo.url }}" class="report-photo" alt="Flood photo">
+            {% else %}
+            <div class="report-no-photo">🌊</div>
+            {% endif %}
+            <div class="report-info">
+                <div class="report-location">📍 {{ report.location }}, {{ report.district }}</div>
+                <div class="report-desc">{{ report.description }}</div>
+                <div class="report-meta">
+                    <span class="badge badge-{{ report.severity|lower }}">{{ report.severity }}</span>
+                    <span class="badge badge-{{ report.status|lower }}">{{ report.status }}</span>
+                    {% if report.evacuation_needed %}
+                    <span style="font-size:11px; color:var(--danger); font-weight:600;">🚨 Evacuation Needed</span>
+                    {% endif %}
+                    <span style="font-size:11px; color:var(--text-muted);">{{ report.reported_at|timesince }} ago</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state card"><div class="empty-icon">📋</div><div>No recent reports</div></div>
+    {% endif %}
+
+    <div class="section-divider"></div>
+
+    <!-- Rescue Teams -->
+    <div class="section-header">
+        <h2 class="section-title">🚁 Rescue <span>Teams</span></h2>
+        <a href="/rescue-teams/" class="view-all">View all teams →</a>
+    </div>
+
+    {% if rescue_teams %}
+    <div class="grid-3">
+        {% for team in rescue_teams %}
+        <div class="team-card">
+            <div class="team-header">
+                <div class="team-icon">
+                    {% if team.team_type == 'NDRF' %}🛡️{% elif team.team_type == 'FIRE' %}🚒{% elif team.team_type == 'COAST_GUARD' %}⚓{% elif team.team_type == 'HEALTH' %}🏥{% else %}🚁{% endif %}
+                </div>
+                <div>
+                    <div class="team-name">{{ team.name }}</div>
+                    <div class="team-type">{{ team.get_team_type_display }}</div>
+                    <div style="font-size:12px; color:var(--text-muted);">📍 {{ team.district }}</div>
+                </div>
+            </div>
+            <div class="team-contact">
+                <a href="tel:{{ team.contact_number }}" class="team-phone">📞 {{ team.contact_number }}</a>
+                <span class="team-avail {% if team.is_available %}avail-yes{% else %}avail-no{% endif %}">
+                    {% if team.is_available %}✅ Available{% else %}❌ Deployed{% endif %}
+                </span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state card"><div class="empty-icon">🚁</div><div>No rescue teams listed</div></div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}{% endblock %}
